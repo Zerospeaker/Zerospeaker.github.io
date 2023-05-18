@@ -1,0 +1,28 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="一个高级语言程序要在计算机上运行需要经历编辑、编译、汇编、链接、装入、执行的过程。&lt;br&gt;经过汇编后的源文件形成了机器指令的序列，但却不一定是一个可以独立装入和运行的可执行文件。一个可执行的工程文件由许多模块组成，其中包含了自身编辑的模块、第三方模块还有高级语言提供的标准库模块。在C、C++中，汇编后生成的以.o为后缀的文件称为目标文件，而众多目标文件经过链接后才形成可执行文件，通常以.out结尾。&lt;br&gt;&lt;strong&gt;链接过程&lt;/strong&gt;可以分为三种："><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>程序链接和装入 | Hickey</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.2"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a><a class="sidebar-nav-item" href="/about">About</a></nav><div class="container post-meta"><div class="post-time">2020-07-28</div> </div></div><div class="container post-header"><p class="post-title" align="center">程序链接和装入</p></div><hr class="_title_line"><div class="container post-content"><p>一个高级语言程序要在计算机上运行需要经历编辑、编译、汇编、链接、装入、执行的过程。<br>经过汇编后的源文件形成了机器指令的序列，但却不一定是一个可以独立装入和运行的可执行文件。一个可执行的工程文件由许多模块组成，其中包含了自身编辑的模块、第三方模块还有高级语言提供的标准库模块。在C、C++中，汇编后生成的以.o为后缀的文件称为目标文件，而众多目标文件经过链接后才形成可执行文件，通常以.out结尾。<br><strong>链接过程</strong>可以分为三种：</p>
+<ol>
+<li>静态链接：如果只是将多个目标文件合并为一个完整的文件，这样的链接方式为静态链接。链接后通常可执行文件体积偏大，因为包含了众多目标文件。</li>
+<li>装入时动态链接：如果将链接过程推迟到装入时，那么就是装入时动态链接。这种情况下链接阶段所要做的就是整理并维护一下装入时所要用到的各目标文件的信息，在装入时由装入模块将需要用到的所有目标文件打包链接成完整文件装入内存。这种链接方式有利于代码的修改和维护，如果某模块的代码实现发生改变但各模块接口不变，那么在装入时，未发生修改的模块无需重新编译。</li>
+<li>运行时动态链接：如果将链接过程推迟到运行时，那么就是运行时动态链接。这种情况下链接和装入阶段都没有必要生成完整的文件，装入时只将目前运行所必要的模块链接装入，其他模块将在执行到相应位置后，再动态链接。这种方式有利于库代码的共享，节省内存空间，因为内存中只需保留一份这样的代码，所有用到这个库文件的执行程序都可以在运行时共享这份代码。<br>装入时动态链接、运行时动态链接合称为动态链接，对应C、C++的动态库，可以减小存储在磁盘上的可执行文件的大小，但相比静态链接，运行时动态链接影响执行效率。静态链接对应C、C++的静态库。</li>
+</ol>
+<p><strong>装入过程</strong>也可分为三种：</p>
+<ol>
+<li>绝对装入：源代码在编译链接时就将变量、函数等符号地址、跳转指令的目标地址全部修改为物理地址，在装入时就按同样的地址装入到内存中。这种方式存在于没有操作系统的时期，仅适用于单道程序环境，因为经过编译链接后的源文件的逻辑地址与装入运行时的物理地址相同，那么运行的程序的内存空间缺乏保护，进程之间很容易访问、修改对方的内存空间。</li>
+<li>可重定位装入（静态重定位）：源代码编译链接后，符号地址、跳转指令的目标地址等都是相对地址，在装入时，根据内存可用情况，一旦确定了装入的位置，就将源文件中用到的所有逻辑地址加上装入位置内存的首地址，形成了物理地址。这样，被装入内存中的代码用到的地址实际上已全部被修改为物理地址。这种装入方式一次将可执行文件完整装入内存，且装入内存后无法在内存中移动，因为内存中代码用到的地址已被修改。适用于早起批处理系统。</li>
+<li>动态运行时装入（动态重定位）：源文件编译链接后，代码中包含的地址都是逻辑地址，在装入时也不加修改映射，因此装入内存中的代码用到的地址也都是逻辑地址，只有在代码执行时，才对本条指令中遇到的操作数的地址、跳转指令的目标地址进行映射，将其转化为目标地址，已找到下一步对内存访问的地址，无论是为了取操作数还是取指令。这种装入方式需要重定位寄存器等硬件的支持，因为装入到内存中的指令用到的地址都是逻辑地址而不是真实物理地址，其在内存中的位置可以连续也可以不连续，只需操作系统记住逻辑地址和物理地址的映射关系即可。因此，这种装入方式支持分段、分页、段页式内存管理，装入到内存中的程序也可以随意移动、换入换出，只需改变映射关系即可。另外，也不必将程序全部一次性装入内存，只需用到时再装入，动态分配内存，这样节省了内存，减少了由于内存不足而程序无法装入运行的可能。此外，还可以将不同运行程序所用到的公共段映射到内存中的同一位置，便于程序段的共享。这是现代操作系统常用的装入方式。</li>
+</ol>
+</div></div><div class="post-main post-comment"><div id="disqus_thread"></div><script type="text/javascript">
+var disqus_shortname = 'hickey-1';
+var disqus_identifier = '2020/07/28/程序链接和装入/';
+var disqus_title = '程序链接和装入';
+var disqus_url = 'http://hickey.ltd/2020/07/28/%E7%A8%8B%E5%BA%8F%E9%93%BE%E6%8E%A5%E5%92%8C%E8%A3%85%E5%85%A5/';
+(function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a target="_blank" rel="noopener" href="http://disqus.com" class="dsq-brlink">Blog comments powered by <span class="logo-disqus">Disqus</span></a></div></article><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/lato-font/3.0.0/css/lato-font.min.css"><link rel="stylesheet" type="text/css" href="/css/number_title.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcdn.net/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

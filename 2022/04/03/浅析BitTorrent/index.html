@@ -1,0 +1,80 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content=" id=&quot;引言&quot;&gt;&lt;a href=&quot;#引言&quot; class=&quot;headerlink&quot; title=&quot;引言&quot;&gt;&lt;/a&gt;引言&lt;/h1&gt;&lt;p&gt;BitTorrent是一种在互联网上下载和分发文件的协议。相比于传统的客户端/服务器模式，BitTorrent网络的使用者被称为&lt;code&gt;peer&lt;/code&gt;。许多&lt;code&gt;peer&lt;/code&gt;之间互相下载自己需要的文件的分片，所谓人人为我，我为人人，这就是&lt;code&gt;p2p&lt;/code&gt;协议，我们将会简要讨论这种p2p模式是如何工作的。"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>浅析BitTorrent协议 | Hickey</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.2"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a><a class="sidebar-nav-item" href="/about">About</a></nav><div class="container post-meta"><div class="post-time">2022-04-03</div> </div></div><div class="container post-header"><p class="post-title" align="center">浅析BitTorrent协议</p></div><hr class="_title_line"><div class="container post-toc"><details class="toc" open><summary class="toc-accordion">Table of Contents</summary><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BC%95%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">引言</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E5%8F%91%E7%8E%B0peer"><span class="toc-number">2.</span> <span class="toc-text">如何发现peer</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%A7%A3%E6%9E%90%E6%8F%8F%E8%BF%B0%E6%96%87%E4%BB%B6"><span class="toc-number">3.</span> <span class="toc-text">解析描述文件</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%8Etracker%E9%82%A3%E9%87%8C%E5%BE%97%E5%88%B0peers%E7%9A%84%E4%BF%A1%E6%81%AF"><span class="toc-number">4.</span> <span class="toc-text">从tracker那里得到peers的信息</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%A7%A3%E6%9E%90tracker%E7%9A%84%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE"><span class="toc-number">5.</span> <span class="toc-text">解析tracker的响应数据</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BC%80%E5%A7%8B%E4%BB%8Epeers%E9%82%A3%E4%B8%8B%E8%BD%BD%E6%96%87%E4%BB%B6%E5%88%86%E7%89%87"><span class="toc-number">6.</span> <span class="toc-text">开始从peers那下载文件分片</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%91%E8%B5%B7TCP%E8%BF%9E%E6%8E%A5"><span class="toc-number">6.1.</span> <span class="toc-text">发起TCP连接</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E6%88%90%EF%BC%88%E5%BA%94%E7%94%A8%E5%B1%82%EF%BC%89%E6%8F%A1%E6%89%8B"><span class="toc-number">6.2.</span> <span class="toc-text">完成（应用层）握手</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%91%E9%80%81%E6%8E%A5%E6%94%B6%E6%B6%88%E6%81%AF"><span class="toc-number">6.3.</span> <span class="toc-text">发送接收消息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E6%9E%90%E6%B6%88%E6%81%AF"><span class="toc-number">6.4.</span> <span class="toc-text">解析消息</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%94%BE%E5%88%B0%E4%B8%80%E8%B5%B7"><span class="toc-number">7.</span> <span class="toc-text">放到一起</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">8.</span> <span class="toc-text">参考</span></a></li></ol></details></div><blockquote> <p>本文使用CC BY-NC-SA 4.0协议。禁止商业转载，非商业转载请注明作者和出处。</p></blockquote><div class="container post-content"><h1 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h1><p>BitTorrent是一种在互联网上下载和分发文件的协议。相比于传统的客户端/服务器模式，BitTorrent网络的使用者被称为<code>peer</code>。许多<code>peer</code>之间互相下载自己需要的文件的分片，所谓人人为我，我为人人，这就是<code>p2p</code>协议，我们将会简要讨论这种p2p模式是如何工作的。</p>
+<p><img src="https://blog.jse.li/torrent/client-server-p2p.png"></p>
+<p>BitTorrent协议历经20多年的发展，在众多优秀的开发者和开源组织的努力下，诸如加解密、分布式发现服务等新特性被添加到协议本身。而我们将基于2001年BitTorrent协议的原始规范开发此项目，后续再加入一些新特性。  </p>
+<h1 id="如何发现peer"><a href="#如何发现peer" class="headerlink" title="如何发现peer"></a>如何发现peer</h1><p>不同于<code>client/server</code>模式下地址相对固定的内容提供者，使用<code>p2p</code>的我们一开始并不知道去哪里获取我们想要的内容。那么如何找到所需文件所在的<code>peer</code>呢？主要有集中式和分布式两种解决方式。</p>
+<p>所谓集中式也就是设置中转站，下载者首先向中转站查询文件所在的<code>peer</code>，然后再向这些<code>peer</code>提供下载请求，这些中转站被称为<code>trackers</code>。他们通常只是简单地通过HTTPS协议与peers打交道（为了节省带宽，也有tracker使用UDP）。</p>
+<p>所谓分布式也就是不设置中转站，内容发现由<code>peer</code>们组成的集群提供分布式的服务。典型的应用如<code>DHT</code>、<code>PEX</code>和磁力链接。</p>
+<p>下面介绍集中式的发现机制。</p>
+<h1 id="解析描述文件"><a href="#解析描述文件" class="headerlink" title="解析描述文件"></a>解析描述文件</h1><p>一个.torrent文件描述了将要下载的文件的内容和对应的tracker的信息。为了下载我们想要的文件，我们首先需要这样一个描述文件。下面是Debian ISO的.torrent文件的样子（除空格外，换行和制表符均为后期添加，二进制文件中没有）：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">d</span></span><br><span class="line">  <span class="number">8</span><span class="string">:announce</span></span><br><span class="line">    <span class="number">41</span><span class="string">:http://bttracker.debian.org:6969/announce</span></span><br><span class="line">  <span class="number">7</span><span class="string">:comment</span></span><br><span class="line">    <span class="number">35</span><span class="string">:&quot;Debian</span> <span class="string">CD</span> <span class="string">from</span> <span class="string">cdimage.debian.org&quot;</span></span><br><span class="line">  <span class="number">13</span><span class="string">:creation</span> <span class="string">date</span></span><br><span class="line">    <span class="string">i1573903810e</span></span><br><span class="line">  <span class="number">4</span><span class="string">:info</span></span><br><span class="line">    <span class="string">d</span></span><br><span class="line">      <span class="number">6</span><span class="string">:length</span></span><br><span class="line">        <span class="string">i351272960e</span></span><br><span class="line">      <span class="number">4</span><span class="string">:name</span></span><br><span class="line">        <span class="number">31</span><span class="string">:debian-10.2.0-amd64-netinst.iso</span></span><br><span class="line">      <span class="number">12</span><span class="string">:piece</span> <span class="string">length</span></span><br><span class="line">        <span class="string">i262144e</span></span><br><span class="line">      <span class="number">6</span><span class="string">:pieces</span></span><br><span class="line">        <span class="number">26800</span><span class="string">:�����PS�^��</span> <span class="string">(binary</span> <span class="string">blob</span> <span class="string">of</span> <span class="string">the</span> <span class="string">hashes</span> <span class="string">of</span> <span class="string">each</span> <span class="string">piece)</span></span><br><span class="line">    <span class="string">e</span></span><br><span class="line"><span class="string">e</span></span><br></pre></td></tr></table></figure>
+
+<p>这种格式被称为<code>Bencode</code>，我们需要将它解码。</p>
+<p>像JSON一样，<code>Bencode</code>可以编码string、int、list、dict，格式如下：</p>
+<ul>
+<li>string：一个数字代表字符串的长度，然后是<code>:</code>，最后是字符串的值，例如<code>4:spam</code>。</li>
+<li>int：以<code>i</code>开头，以<code>e</code>结尾，中间是整数的值，例如<code>i8887e</code>。</li>
+<li>list：以<code>l</code>开头，以<code>e</code>结尾，中间是<code>string</code>、<code>int</code>、<code>list</code>、<code>dict</code>组成的序列，如<code>l4:spami7ee</code>代表<code>[&quot;spam&quot;, 7]</code>。</li>
+<li>dict：以<code>d</code>开头，以<code>e</code>结尾，中间是键值对序列，键必须是<code>string</code>，值可以是Bencode四种类型的任意类型。例如<code>d4:spami7e2:abi978ee</code>代表<code>&#123;spam: 7, ab: 978&#125;</code>。</li>
+</ul>
+<p>Bencode格式不具备JSON那样对于人的可读性，但它可以快速地处理二进制数据，而且从数据流中解析Bencode数据非常容易。</p>
+<p>在上面的文件中，从<code>&#39;announce&#39;</code>字段我们可以得到tracker的URL；从<code>&#39;create date&#39;</code>字段我们可以得到Unix时间戳格式的创建日期；从<code>&#39;info&#39;</code>字段的<code>&#39;length&#39;</code>、<code>&#39;name&#39;</code>、<code>&#39;piece length&#39;</code>子字段中可以分别得到将要下载的文件的长度、名字、分片长度，<code>&#39;pieces&#39;</code>子字段中可以得到使用SHA-1算法获得的摘要序列（对于每个<code>piece</code>，SHA-1算法生成20字节的数字摘要，因此<code>351272960 / 262144 * 20 = 26800</code>）。</p>
+<p>每个文件被分成等长的<code>piece</code>，每个<code>piece</code>的长度等于<code>&#39;piece length&#39;</code>的值。不同的传输文件的<code>&#39;piece length&#39;</code>可以有不同的值，常在256KB到1MB之间。这意味着一个大的文件由许多等长的<code>piece</code>组成，我们将从<code>peers</code>那里下载这些<code>pieces</code>，并用<code>SHA-1</code>生成的数字摘要校验，最后将<code>pieces</code>组装起来，我们就得到了一个完整的文件。    </p>
+<p><img src="https://blog.jse.li/torrent/pieces.png"></p>
+<p>每个文件分片分别校验，使用这种方式，无论是偶然的传输错误还是有意的文件污染，我们都能得到正确的完整文件，除非攻击者可以破解SHA-1算法（当然，SHA-1现在已经不安全了）。</p>
+<h1 id="从tracker那里得到peers的信息"><a href="#从tracker那里得到peers的信息" class="headerlink" title="从tracker那里得到peers的信息"></a>从tracker那里得到peers的信息</h1><p>我们现在有了文件的信息和对应tracker的URL了，接下来只需要通过HTTP协议向tracker发一个<code>GET</code>或<code>POST</code>请求（附带必要参数）来向tracker宣示我们的存在，并获取其他peers的列表。</p>
+<p>比较重要的参数：</p>
+<ul>
+<li>info_hash：唯一标识了我们要下载的文件，是通过对前面<code>.torrent</code>文件的<code>&#39;info&#39;</code>字段使用SHA-1算法生成的20字节数字摘要序列。tracker根据<code>info_hash</code>值来决定响应给我们哪些<code>peers</code>。</li>
+<li>peer_id：一个向trackers和其他peers表明我们身份的20字节的名字，格式如<code>-TR2940-k8hj0wgej6ch</code>，其中TR2940代表客户端版本2.94，后面的序列随机生成。    </li>
+</ul>
+<p><img src="https://blog.jse.li/torrent/info-hash-peer-id.png"></p>
+<h1 id="解析tracker的响应数据"><a href="#解析tracker的响应数据" class="headerlink" title="解析tracker的响应数据"></a>解析tracker的响应数据</h1><p>我们从tracker那里得到了一个bencode格式的响应：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">d</span></span><br><span class="line">  <span class="number">8</span><span class="string">:interval</span></span><br><span class="line">    <span class="string">i900e</span></span><br><span class="line">  <span class="number">5</span><span class="string">:peers</span></span><br><span class="line">    <span class="number">252</span><span class="string">:(another</span> <span class="string">long</span> <span class="string">binary</span> <span class="string">blob)</span></span><br><span class="line"><span class="string">e</span></span><br></pre></td></tr></table></figure>
+
+<p><code>&#39;interval&#39;</code>字段告诉我们，我们应该每隔900秒再次向tracker发起请求以刷新我们获取的peers的列表。</p>
+<p><code>&#39;peers&#39;</code>字段是六个字节的序列，每6个字节的前4个字节代表一个peer的ipv4地址，后2个字节代表端口号（大端序）。  </p>
+<p><img src="https://blog.jse.li/torrent/address.png"></p>
+<h1 id="开始从peers那下载文件分片"><a href="#开始从peers那下载文件分片" class="headerlink" title="开始从peers那下载文件分片"></a>开始从peers那下载文件分片</h1><h2 id="发起TCP连接"><a href="#发起TCP连接" class="headerlink" title="发起TCP连接"></a>发起TCP连接</h2><p>我们已经得到了peers的<code>ip:port</code>地址，现在就可以发起TCP连接了。</p>
+<h2 id="完成（应用层）握手"><a href="#完成（应用层）握手" class="headerlink" title="完成（应用层）握手"></a>完成（应用层）握手</h2><p>建立完TCP连接后，我们还要进一步确认对方是否可以使用BitTorrent协议通信、能否理解并响应我们的消息、是否有我们想要的文件。  </p>
+<p><img src="https://blog.jse.li/torrent/handshake.png"></p>
+<p>用于握手的消息格式如下：</p>
+<ul>
+<li>协议标识的长度和pstr(协议标识)：总是<code>19(16进制的0x13)</code>和<code>BitTorrent protocol</code>，即<code>\x13BitTorrent protocol</code>。</li>
+<li>8个保留字节，全部设置为0。某位为1代表支持某种扩展。</li>
+<li>之前我们计算得到的标识我们想要的文件的infohash值。</li>
+<li>标识我们自己的peerid。</li>
+</ul>
+<p>把它们放在一起就形成了握手消息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">\x13BitTorrent protocol\x00\x00\x00\x00\x00\x00\x00\x00\x86\xd4\xc8\x00\x24\xa4\x69\xbe\x4c\x50\xbc\x5a\x10\x2c\xf7\x17\x80\x31\x00\x74-TR2940-k8hj0wgej6ch</span><br></pre></td></tr></table></figure>
+
+<p>正常情况下我们应该收到同样格式的握手消息响应，并且响应的infohash应该和我们发送的一样。否则代表出错，我们可以直接关闭连接了。</p>
+<h2 id="发送接收消息"><a href="#发送接收消息" class="headerlink" title="发送接收消息"></a>发送接收消息</h2><p>截止到目前，我们已经和peer打好了交道，但是现在我们还不能收发消息，直到peer那边向我们发送一个<code>unchoke</code>message。一但我们被<code>unchoked</code>，我们就可以发送文件分片的请求，peers就可以向我们响应包含文件分片内容的消息。  </p>
+<p><img src="https://blog.jse.li/torrent/choke.png"></p>
+<h2 id="解析消息"><a href="#解析消息" class="headerlink" title="解析消息"></a>解析消息</h2><p>一段消息包含长度、ID和可选的内容：  </p>
+<p><img src="https://blog.jse.li/torrent/message.png"></p>
+<ul>
+<li>length字段是大端序的32位的整数。</li>
+<li>ID字段是8位整数，标识了消息的类型<code>type</code>。</li>
+<li>payload是可选的内容载荷。</li>
+</ul>
+<h1 id="放到一起"><a href="#放到一起" class="headerlink" title="放到一起"></a>放到一起</h1><p>总结一下，下载一个文件的完整的时序图如下：  </p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/202204032029022.png" alt="image-20220403202859737"></p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><blockquote>
+<p>[1] <a target="_blank" rel="noopener" href="https://blog.jse.li/posts/torrent/">Building a BitTorrent client from the ground up in Go.</a><br>[2] <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV13P4y1378F?spm_id_from=333.1007.top_right_bar_window_history.content.click">Go手写BT下载器.</a></p>
+</blockquote>
+</div></div><div class="post-main post-comment"><div id="disqus_thread"></div><script type="text/javascript">
+var disqus_shortname = 'hickey-1';
+var disqus_identifier = '2022/04/03/浅析BitTorrent/';
+var disqus_title = '浅析BitTorrent协议';
+var disqus_url = 'http://hickey.ltd/2022/04/03/%E6%B5%85%E6%9E%90BitTorrent/';
+(function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a target="_blank" rel="noopener" href="http://disqus.com" class="dsq-brlink">Blog comments powered by <span class="logo-disqus">Disqus</span></a></div></article><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/lato-font/3.0.0/css/lato-font.min.css"><link rel="stylesheet" type="text/css" href="/css/number_title.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcdn.net/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

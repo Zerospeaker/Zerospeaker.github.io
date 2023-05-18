@@ -1,0 +1,142 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content=" id=&quot;x86-64寄存器&quot;&gt;&lt;a href=&quot;#x86-64寄存器&quot; class=&quot;headerlink&quot; title=&quot;x86-64寄存器&quot;&gt;&lt;/a&gt;x86-64寄存器&lt;/h1&gt;&lt;p&gt;x86-64架构又称AMD64，兼容x86体系（如8086、80386等）。"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>x86-64寄存器、栈帧与函数调用约定 | Hickey</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.2"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a><a class="sidebar-nav-item" href="/about">About</a></nav><div class="container post-meta"><div class="post-time">2021-08-14</div> <div class="post-tags"><a class="post-tag-none-link" href="/tags/ABI/" rel="tag">#ABI</a> <a class="post-tag-none-link" href="/tags/x86-64/" rel="tag">#x86-64</a></div></div></div><div class="container post-header"><p class="post-title" align="center">x86-64寄存器、栈帧与函数调用约定</p></div><hr class="_title_line"><div class="container post-toc"><details class="toc" open><summary class="toc-accordion">Table of Contents</summary><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#x86-64%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">1.</span> <span class="toc-text">x86-64寄存器</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A0%88%E5%B8%A7"><span class="toc-number">2.</span> <span class="toc-text">栈帧</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E7%9A%84%E7%BA%A6%E5%AE%9A"><span class="toc-number">3.</span> <span class="toc-text">函数调用的约定</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%A1%A5%E5%85%85"><span class="toc-number">4.</span> <span class="toc-text">补充</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">5.</span> <span class="toc-text">参考</span></a></li></ol></details></div><blockquote> <p>本文使用CC BY-NC-SA 4.0协议。禁止商业转载，非商业转载请注明作者和出处。</p></blockquote><div class="container post-content"><h1 id="x86-64寄存器"><a href="#x86-64寄存器" class="headerlink" title="x86-64寄存器"></a>x86-64寄存器</h1><p>x86-64架构又称AMD64，兼容x86体系（如8086、80386等）。</p>
+<p>x86-64处理器拥有16个64位寄存器，分别是rax、rbx、rcx、rdx、rsi、rdi、rsp、rbp、r8、r9、r10、r11、r12、r13、r14、r15。</p>
+<p>他们在函数调用过程中的作用和使用如下表：</p>
+<table>
+<thead>
+<tr>
+<th align="left">64位寄存器</th>
+<th align="center">用途</th>
+<th align="center">保存</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">rax</td>
+<td align="center">第1返回值寄存器</td>
+<td align="center">如果调用者要求跨函数调用时其值不丢失，那么由调用者自行保存，否则可以不保存</td>
+</tr>
+<tr>
+<td align="left">rbx</td>
+<td align="center">\</td>
+<td align="center">由被调用者保存</td>
+</tr>
+<tr>
+<td align="left">rcx</td>
+<td align="center">第4参数</td>
+<td align="center">如果调用者要求跨函数调用时其值不丢失，那么由调用者自行保存，否则可以不保存</td>
+</tr>
+<tr>
+<td align="left">rdx</td>
+<td align="center">第2返回值寄存器；第3参数</td>
+<td align="center">如果调用者要求跨函数调用时其值不丢失，那么由调用者自行保存，否则可以不保存</td>
+</tr>
+<tr>
+<td align="left">rsi</td>
+<td align="center">第2参数</td>
+<td align="center">如果调用者要求跨函数调用时其值不丢失，那么由调用者自行保存，否则可以不保存</td>
+</tr>
+<tr>
+<td align="left">rdi</td>
+<td align="center">第1参数</td>
+<td align="center">如果调用者要求跨函数调用时其值不丢失，那么由调用者自行保存，否则可以不保存</td>
+</tr>
+<tr>
+<td align="left">rsp</td>
+<td align="center">栈指针</td>
+<td align="center">不用直接保存，根据rbp和偏移值可以找到旧的rsp</td>
+</tr>
+<tr>
+<td align="left">rbp</td>
+<td align="center">帧指针</td>
+<td align="center">由被调用者保存</td>
+</tr>
+<tr>
+<td align="left">r8</td>
+<td align="center">第5参数</td>
+<td align="center">如果调用者要求跨函数调用时其值不丢失，那么由调用者自行保存，否则可以不保存</td>
+</tr>
+<tr>
+<td align="left">r9</td>
+<td align="center">第6参数</td>
+<td align="center">如果调用者要求跨函数调用时其值不丢失，那么由调用者自行保存，否则可以不保存</td>
+</tr>
+<tr>
+<td align="left">r10</td>
+<td align="center">\</td>
+<td align="center">如果调用者要求跨函数调用时其值不丢失，那么由调用者自行保存，否则可以不保存</td>
+</tr>
+<tr>
+<td align="left">r11</td>
+<td align="center">\</td>
+<td align="center">如果调用者要求跨函数调用时其值不丢失，那么由调用者自行保存，否则可以不保存</td>
+</tr>
+<tr>
+<td align="left">r12</td>
+<td align="center">\</td>
+<td align="center">由被调用者保存</td>
+</tr>
+<tr>
+<td align="left">r13</td>
+<td align="center">\</td>
+<td align="center">由被调用者保存</td>
+</tr>
+<tr>
+<td align="left">r14</td>
+<td align="center">\</td>
+<td align="center">由被调用者保存</td>
+</tr>
+<tr>
+<td align="left">r15</td>
+<td align="center">\</td>
+<td align="center">由被调用者保存</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>表注：所有寄存器都可能有别的用处，但与函数调用无关，其用途体现在函数内，如rax用作累加器、rcx用于计数器。上表只是他们在函数调用中的作用。</p>
+</blockquote>
+<h1 id="栈帧"><a href="#栈帧" class="headerlink" title="栈帧"></a>栈帧</h1><p>函数调用通常是通过栈帧的切换来实现的，每一个栈帧保存了函数的活动记录。下图是x86-64栈帧的布局：</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20220705143514-2022-07-05-14-35-14.png" alt="image-20220705143512189"></p>
+<h1 id="函数调用的约定"><a href="#函数调用的约定" class="headerlink" title="函数调用的约定"></a>函数调用的约定</h1><p>x86-64用于函数调用指令有三条：call、leave、ret。</p>
+<p>call指令相当于：<code>pushq %rip</code>、<code>jmp callee</code>。将目前的rip指针+1入栈保存，接着将被调用函数的第一条指令的地址载入rip寄存器。</p>
+<p>leave指令相当于：<code>movq %rbp, %rsp</code>、<code>popq %rbp</code>。将栈顶指针指向目前的帧指针，而目前的帧指针指向的内存保存的是旧的rbp的值。pop之后旧的rbp的值被载入rbp寄存器，同时rsp上移，指向8(%rbp)，即返回地址。</p>
+<p>ret相当于：<code>popq %rip</code>  。在pop之前，栈指针rsp一定指向返回地址。pop后就完成了函数返回。</p>
+<p>来看下函数调用的完整过程：</p>
+<ol>
+<li>调用者若有跨函数调用保存寄存器的需求，则先保存寄存器，将这些寄存器入栈。</li>
+<li>传入参数，小于等于6个参数用寄存器传递，超出6个的参数入栈。参数从右到左传入，若多于6个，则超出的参数分别入栈，最左6个参数照旧用寄存器传递。</li>
+<li>call，进入被调用函数。</li>
+<li>进入被调用函数后，首先需要保存旧的rbp并更新rbp，即<code>pushq %rbp; movq %rsp, %rbp</code>。</li>
+<li>除了rbp，被调用函数还需要为调用者保存一些寄存器，即rbx、r12-r15。</li>
+<li>被调用函数做自己的工作。</li>
+<li>将返回值传到rax。</li>
+<li>被调用函数为调用者恢复保存的寄存器即rbx、r12-r15。</li>
+<li>恢复rsp、rbp。其中rsp不能一步恢复，需要ret后才真正恢复。<code>movl %rbp, %rsp; popq %rbp</code>（或直接用leave指令）。</li>
+<li>ret。恢复完rbp后，rsp目前指向返回地址，ret就是将返回地址弹出到rip。</li>
+<li>弹出传入的参数，即<code>addq $NUM,%rsp</code>。</li>
+<li>若调用者之前保存了跨函数调用的寄存器，则出栈恢复这些寄存器。</li>
+</ol>
+<h1 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h1><p>对于传入的参数是浮点数、结构体等，传入方式有些不同，具体见参考3-Chapter 3。</p>
+<p>另外，帧指针是可以省下来用作他用的，gcc为大部分的程序，都加了优化编译选项：-O2（-fomit-frame-pointer）。在这种优化级别，甚至更低的优化级别-O1，都已经去除了帧指针，也就是rbp中再也不是保存帧指针，而且另作他途。在x86-32时代，当前栈帧总是从保存ebp开始，空间由运行时决定，通过不断push和pop改变当前栈帧空间；x86-64开始，GCC有了新的选择，优化编译选项-O1，可以让GCC不再使用栈帧指针。</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><blockquote>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://www.imperialviolet.org/2017/01/18/cfi.html">ImperialViolet - CFI directives in assembly files</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.classes.cs.uchicago.edu/archive/2009/spring/22620-1/docs/handout-03.pdf">handout-03.pdf (uchicago.edu)</a></li>
+<li><a target="_blank" rel="noopener" href="https://refspecs.linuxfoundation.org/elf/x86_64-abi-0.95.pdf">x86_64-abi-0.95.pdf (linuxfoundation.org)</a></li>
+<li><a target="_blank" rel="noopener" href="http://math-atlas.sourceforge.net/devel/assembly/abi386-4.pdf">abi386-4.pdf (sourceforge.net)</a></li>
+</ol>
+</blockquote>
+</div></div><div class="post-main post-comment"><div id="disqus_thread"></div><script type="text/javascript">
+var disqus_shortname = 'hickey-1';
+var disqus_identifier = '2021/08/14/x86-64寄存器、栈帧与函数调用约定/';
+var disqus_title = 'x86-64寄存器、栈帧与函数调用约定';
+var disqus_url = 'http://hickey.ltd/2021/08/14/x86-64%E5%AF%84%E5%AD%98%E5%99%A8%E3%80%81%E6%A0%88%E5%B8%A7%E4%B8%8E%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E7%BA%A6%E5%AE%9A/';
+(function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a target="_blank" rel="noopener" href="http://disqus.com" class="dsq-brlink">Blog comments powered by <span class="logo-disqus">Disqus</span></a></div></article><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/lato-font/3.0.0/css/lato-font.min.css"><link rel="stylesheet" type="text/css" href="/css/number_title.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcdn.net/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

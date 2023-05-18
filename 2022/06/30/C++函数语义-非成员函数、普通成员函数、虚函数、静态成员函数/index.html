@@ -1,0 +1,313 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content=" id=&quot;函数分类&quot;&gt;&lt;a href=&quot;#函数分类&quot; class=&quot;headerlink&quot; title=&quot;函数分类&quot;&gt;&lt;/a&gt;函数分类&lt;/h1&gt;&lt;p&gt;C++中有四种函数：静态类成员函数、非静态非虚类成员函数、非静态虚类成员函数、非成员函数。"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>C++函数语义-非成员函数、普通成员函数、虚函数、静态成员函数 | Hickey</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.2"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a><a class="sidebar-nav-item" href="/about">About</a></nav><div class="container post-meta"><div class="post-time">2022-06-30</div> </div></div><div class="container post-header"><p class="post-title" align="center">C++函数语义-非成员函数、普通成员函数、虚函数、静态成员函数</p></div><hr class="_title_line"><div class="container post-toc"><details class="toc" open><summary class="toc-accordion">Table of Contents</summary><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%87%BD%E6%95%B0%E5%88%86%E7%B1%BB"><span class="toc-number">1.</span> <span class="toc-text">函数分类</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%9D%9E%E9%9D%99%E6%80%81%E9%9D%9E%E8%99%9A%E7%B1%BB%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0"><span class="toc-number">2.</span> <span class="toc-text">非静态非虚类成员函数</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%9D%9E%E9%9D%99%E6%80%81%E8%99%9A%E7%B1%BB%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0"><span class="toc-number">3.</span> <span class="toc-text">非静态虚类成员函数</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%95%E7%BB%A7%E6%89%BF"><span class="toc-number">3.1.</span> <span class="toc-text">单继承</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%9A%E7%BB%A7%E6%89%BF"><span class="toc-number">3.2.</span> <span class="toc-text">多继承</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%8F%B1%E5%BD%A2%E7%BB%A7%E6%89%BF%E2%80%94%E8%99%9A%E7%BB%A7%E6%89%BF"><span class="toc-number">3.3.</span> <span class="toc-text">菱形继承—虚继承</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E3%80%81%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%E3%80%81delete%E5%92%8C%E8%99%9A%E5%87%BD%E6%95%B0"><span class="toc-number">3.4.</span> <span class="toc-text">构造函数、析构函数、delete和虚函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%99%9A%E5%87%BD%E6%95%B0%E5%92%8C%E9%BB%98%E8%AE%A4%E5%8F%82%E6%95%B0"><span class="toc-number">3.5.</span> <span class="toc-text">虚函数和默认参数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%99%9A%E5%87%BD%E6%95%B0%E5%A6%82%E4%BD%95%E8%B0%83%E7%94%A8"><span class="toc-number">3.6.</span> <span class="toc-text">虚函数如何调用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E3%80%81%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%E4%B8%8E%E8%99%9A%E5%87%BD%E6%95%B0"><span class="toc-number">3.7.</span> <span class="toc-text">构造函数、析构函数与虚函数</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%9D%99%E6%80%81%E7%B1%BB%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0"><span class="toc-number">4.</span> <span class="toc-text">静态类成员函数</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">5.</span> <span class="toc-text">参考</span></a></li></ol></details></div><blockquote> <p>本文使用CC BY-NC-SA 4.0协议。禁止商业转载，非商业转载请注明作者和出处。</p></blockquote><div class="container post-content"><h1 id="函数分类"><a href="#函数分类" class="headerlink" title="函数分类"></a>函数分类</h1><p>C++中有四种函数：静态类成员函数、非静态非虚类成员函数、非静态虚类成员函数、非成员函数。</p>
+<p>其中非静态非虚类成员函数、非静态虚类成员函数又有const、非const之分。</p>
+<p>接下来我们来看下这4种函数在C++中是如何工作的（g++ 7.5）。</p>
+<h1 id="非静态非虚类成员函数"><a href="#非静态非虚类成员函数" class="headerlink" title="非静态非虚类成员函数"></a>非静态非虚类成员函数</h1><p>C++是面向对象的，但设计准则之一要求在C的基础上引入面向对象范式后，非静态类成员函数至少和一般的非成员函数有相同的效率。考虑下面的代码，如果要在getX_extern和getX函数之间做选择，那么选择类成员函数不应该带来什么额外负担。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">A</span>&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">friend</span> <span class="type">int</span> <span class="title">getX_extern</span><span class="params">(<span class="type">const</span> A&amp;)</span></span>;</span><br><span class="line">    <span class="built_in">A</span>(): <span class="built_in">x_</span>(<span class="number">0</span>), <span class="built_in">y_</span>(<span class="number">0</span>)&#123;&#125;</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">getX</span><span class="params">()</span> <span class="type">const</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> x_;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">setX</span><span class="params">(<span class="type">int</span> val)</span></span>&#123;</span><br><span class="line">        x_ = val;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="type">int</span> x_;</span><br><span class="line">    <span class="type">int</span> y_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">getX_extern</span><span class="params">(<span class="type">const</span> A&amp; a)</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> a.x_;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">void</span>)</span></span>&#123;</span><br><span class="line">    A a;</span><br><span class="line">    A* a_ptr = &amp;a;</span><br><span class="line">    <span class="type">int</span> ret = a.<span class="built_in">getX</span>();</span><br><span class="line">    ret = a_ptr-&gt;<span class="built_in">getX</span>();</span><br><span class="line">    a.<span class="built_in">setX</span>(<span class="number">2</span>);</span><br><span class="line">    ret = a.<span class="built_in">getX</span>();</span><br><span class="line">    ret = <span class="built_in">getX_extern</span>(a);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实际上，编译器内部已将类成员函数转化为和非成员函数一样的形式：</p>
+<ol>
+<li><p>首先改写函数原型，增加第一个参数为this指针，指向类对象实例，然后将函数内部对类成员的所有取用都改写成通过this访问。伪码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">getX</span><span class="params">(A* <span class="type">const</span> <span class="keyword">this</span>)</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>-&gt;x_val;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>然后对函数进行”mangling”处理，即名字修饰，使函数的名字独一无二。不同编译器的”mangling”方式不同，不同语言的也不同，如C++和C，这也是为什么C++代码中要使用C函数声明时要用extern “C”的一个原因。例如gnu C++遵循参考2的ABI。为了支持函数重载，mangling的时候C++将函数名、函数参数、函数参数类型（其实还包括const、noexcept）都考虑在内，而C只考虑函数名，这是他不支持函数重载的原因之一。</p>
+</li>
+</ol>
+<p>对函数的调用也会被转化，伪码如：</p>
+<ul>
+<li><code>a.getX()</code>=&gt;<code>name(&amp;a)</code>（name指代getX经过mangling之后的名字）</li>
+<li><code>a_ptr-&gt;getX()</code>=&gt;<code>name(a_ptr)</code></li>
+</ul>
+<p>为了验证我们所说，大致浏览一下上面C++代码在g++ 7.5下的汇编代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br></pre></td><td class="code"><pre><span class="line">.file   &quot;function_semantics_test.cpp&quot;</span><br><span class="line">        .text</span><br><span class="line">        .section        .text._ZN1AC2Ev,&quot;axG&quot;,@progbits,_ZN1AC5Ev,comdat</span><br><span class="line">        .align 2</span><br><span class="line">        .weak   _ZN1AC2Ev</span><br><span class="line">        .type   _ZN1AC2Ev, @function</span><br><span class="line">_ZN1AC2Ev:</span><br><span class="line">.LFB1:</span><br><span class="line">        .cfi_startproc</span><br><span class="line">        pushq   %rbp</span><br><span class="line">        .cfi_def_cfa_offset 16</span><br><span class="line">        .cfi_offset 6, -16</span><br><span class="line">        movq    %rsp, %rbp</span><br><span class="line">        .cfi_def_cfa_register 6</span><br><span class="line">        movq    %rdi, -8(%rbp)</span><br><span class="line">        movq    -8(%rbp), %rax</span><br><span class="line">        movl    $0, (%rax)</span><br><span class="line">        movq    -8(%rbp), %rax</span><br><span class="line">        movl    $0, 4(%rax)</span><br><span class="line">        nop</span><br><span class="line">        popq    %rbp</span><br><span class="line">        .cfi_def_cfa 7, 8</span><br><span class="line">        ret</span><br><span class="line">        .cfi_endproc</span><br><span class="line">.LFE1:</span><br><span class="line">        .size   _ZN1AC2Ev, .-_ZN1AC2Ev</span><br><span class="line">        .weak   _ZN1AC1Ev</span><br><span class="line">        .set    _ZN1AC1Ev,_ZN1AC2Ev</span><br><span class="line">        .section        .text._ZNK1A4getXEv,&quot;axG&quot;,@progbits,_ZNK1A4getXEv,comdat</span><br><span class="line">        .align 2</span><br><span class="line">        .weak   _ZNK1A4getXEv</span><br><span class="line">        .type   _ZNK1A4getXEv, @function</span><br><span class="line">_ZNK1A4getXEv:</span><br><span class="line">.LFB3:</span><br><span class="line">        .cfi_startproc</span><br><span class="line">        pushq   %rbp</span><br><span class="line">        .cfi_def_cfa_offset 16</span><br><span class="line">        .cfi_offset 6, -16</span><br><span class="line">        movq    %rsp, %rbp</span><br><span class="line">        .cfi_def_cfa_register 6</span><br><span class="line">        movq    %rdi, -8(%rbp)</span><br><span class="line">        movq    -8(%rbp), %rax</span><br><span class="line">        movl    (%rax), %eax</span><br><span class="line">        popq    %rbp</span><br><span class="line">        .cfi_def_cfa 7, 8</span><br><span class="line">        ret</span><br><span class="line">        .cfi_endproc</span><br><span class="line">.LFE3:</span><br><span class="line">        .size   _ZNK1A4getXEv, .-_ZNK1A4getXEv</span><br><span class="line">        .section        .text._ZN1A4setXEi,&quot;axG&quot;,@progbits,_ZN1A4setXEi,comdat</span><br><span class="line">        .align 2</span><br><span class="line">        .weak   _ZN1A4setXEi</span><br><span class="line">        .type   _ZN1A4setXEi, @function</span><br><span class="line">_ZN1A4setXEi:</span><br><span class="line">.LFB4:</span><br><span class="line">        .cfi_startproc</span><br><span class="line">        pushq   %rbp</span><br><span class="line">        .cfi_def_cfa_offset 16</span><br><span class="line">        .cfi_offset 6, -16</span><br><span class="line">        movq    %rsp, %rbp</span><br><span class="line">        .cfi_def_cfa_register 6</span><br><span class="line">        movq    %rdi, -8(%rbp)</span><br><span class="line">        movl    %esi, -12(%rbp)</span><br><span class="line">        movq    -8(%rbp), %rax</span><br><span class="line">        movl    -12(%rbp), %edx</span><br><span class="line">        movl    %edx, (%rax)</span><br><span class="line">        nop</span><br><span class="line">        popq    %rbp</span><br><span class="line">        .cfi_def_cfa 7, 8</span><br><span class="line">        ret</span><br><span class="line">        .cfi_endproc</span><br><span class="line">.LFE4:</span><br><span class="line">        .size   _ZN1A4setXEi, .-_ZN1A4setXEi</span><br><span class="line">        .text</span><br><span class="line">        .globl  _Z11getX_externRK1A</span><br><span class="line">        .type   _Z11getX_externRK1A, @function</span><br><span class="line">_Z11getX_externRK1A:</span><br><span class="line">.LFB5:</span><br><span class="line">        .cfi_startproc</span><br><span class="line">        pushq   %rbp</span><br><span class="line">        .cfi_def_cfa_offset 16</span><br><span class="line">        .cfi_offset 6, -16</span><br><span class="line">        movq    %rsp, %rbp</span><br><span class="line">        .cfi_def_cfa_register 6</span><br><span class="line">        movq    %rdi, -8(%rbp)</span><br><span class="line">        movq    -8(%rbp), %rax</span><br><span class="line">        movl    (%rax), %eax</span><br><span class="line">        popq    %rbp</span><br><span class="line">        .cfi_def_cfa 7, 8</span><br><span class="line">        ret</span><br><span class="line">        .cfi_endproc</span><br><span class="line">.LFE5:</span><br><span class="line">        .size   _Z11getX_externRK1A, .-_Z11getX_externRK1A</span><br><span class="line">        .globl  main</span><br><span class="line">        .type   main, @function</span><br><span class="line">main:</span><br><span class="line">.LFB6:</span><br><span class="line">        .cfi_startproc</span><br><span class="line">        pushq   %rbp</span><br><span class="line">        .cfi_def_cfa_offset 16</span><br><span class="line">        .cfi_offset 6, -16</span><br><span class="line">        movq    %rsp, %rbp</span><br><span class="line">        .cfi_def_cfa_register 6</span><br><span class="line">        subq    $32, %rsp</span><br><span class="line">        movq    %fs:40, %rax</span><br><span class="line">        movq    %rax, -8(%rbp)</span><br><span class="line">        xorl    %eax, %eax</span><br><span class="line">        leaq    -16(%rbp), %rax</span><br><span class="line">        movq    %rax, %rdi</span><br><span class="line">        call    _ZN1AC1Ev</span><br><span class="line">        leaq    -16(%rbp), %rax</span><br><span class="line">        movq    %rax, -24(%rbp)</span><br><span class="line">        leaq    -16(%rbp), %rax</span><br><span class="line">        movq    %rax, %rdi</span><br><span class="line">        call    _ZNK1A4getXEv</span><br><span class="line">        movl    %eax, -28(%rbp)</span><br><span class="line">        movq    -24(%rbp), %rax</span><br><span class="line">        movq    %rax, %rdi</span><br><span class="line">        call    _ZNK1A4getXEv</span><br><span class="line">        movl    %eax, -28(%rbp)</span><br><span class="line">        leaq    -16(%rbp), %rax</span><br><span class="line">        movl    $2, %esi</span><br><span class="line">        movq    %rax, %rdi</span><br><span class="line">        call    _ZN1A4setXEi</span><br><span class="line">        leaq    -16(%rbp), %rax</span><br><span class="line">        movq    %rax, %rdi</span><br><span class="line">        call    _ZNK1A4getXEv</span><br><span class="line">        movl    %eax, -28(%rbp)</span><br><span class="line">        leaq    -16(%rbp), %rax</span><br><span class="line">        movq    %rax, %rdi</span><br><span class="line">        call    _Z11getX_externRK1A</span><br><span class="line">        movl    %eax, -28(%rbp)</span><br><span class="line">        movl    $0, %eax</span><br><span class="line">        movq    -8(%rbp), %rdx</span><br><span class="line">        xorq    %fs:40, %rdx</span><br><span class="line">        je      .L9</span><br><span class="line">        call    __stack_chk_fail@PLT</span><br><span class="line">.L9:</span><br><span class="line">        leave</span><br><span class="line">        .cfi_def_cfa 7, 8</span><br><span class="line">        ret</span><br><span class="line">        .cfi_endproc</span><br><span class="line">.LFE6:</span><br><span class="line">        .size   main, .-main</span><br><span class="line">        .ident  &quot;GCC: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0&quot;</span><br><span class="line">        .section        .note.GNU-stack,&quot;&quot;,@progbits</span><br></pre></td></tr></table></figure>
+
+<p>从第33行我们看到getX被修饰成_ZNK1A4getXEv。</p>
+<p>111-113行对应<code>A* a_ptr = &amp;a;</code>因此a、A的地址分别为-16(%rbp)、-24(%rbp)。</p>
+<p>114-116行对应<code>int ret = a.getX();</code>在call之前，将第一参数this指针（&amp;a）通过rdi寄存器传递，而后返回值存放到eax寄存器中。</p>
+<h1 id="非静态虚类成员函数"><a href="#非静态虚类成员函数" class="headerlink" title="非静态虚类成员函数"></a>非静态虚类成员函数</h1><p>C++中的虚函数是通过虚函数表实现的，虚函数表的指针存放在内存对象中，但并不是所有虚函数的调用都会使用虚函数表。</p>
+<p>若通过对象直接访问虚函数，那么就像调用普通函数一样直接通过函数名调用，不通过虚函数指针。只有通过指针或引用变量调用，并且调用的是虚函数，才会借助虚函数表。</p>
+<h2 id="单继承"><a href="#单继承" class="headerlink" title="单继承"></a>单继承</h2><p>为了体现虚函数表具体是怎么实现的，看一下以下代码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Base</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Foo</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line">  <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">FooNotOverridden</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Derived</span> : <span class="keyword">public</span> Base &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">Foo</span><span class="params">()</span> <span class="keyword">override</span> </span>&#123;&#125;</span><br><span class="line">  <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">AddedVirtualFunc</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  Base p1, p2;</span><br><span class="line">  Derived d1, d2;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后我们通过gdb调试：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">(gdb) b main</span><br><span class="line">Breakpoint 1 at 0x852: file function_semantics_test.cpp, line 13.</span><br><span class="line">(gdb) run</span><br><span class="line">Starting program: /home/hickey/algorithms/a.out </span><br><span class="line"></span><br><span class="line">Breakpoint 1, main () at function_semantics_test.cpp:13</span><br><span class="line">13      int main() &#123;</span><br><span class="line">(gdb) n</span><br><span class="line">14        Base p1, p2;</span><br><span class="line">(gdb) n</span><br><span class="line">15        Derived d1, d2;</span><br><span class="line">(gdb) n</span><br><span class="line">17        return 0;</span><br><span class="line">(gdb) p p1</span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">1 = &#123;_vptr.Base = 0x555555600d80 &lt;vtable <span class="keyword">for</span> Base+16&gt;&#125;</span></span><br><span class="line">(gdb) p p2</span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">2 = &#123;_vptr.Base = 0x555555600d80 &lt;vtable <span class="keyword">for</span> Base+16&gt;&#125;</span></span><br><span class="line">(gdb) p d1</span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">3 = &#123;&lt;Base&gt; = &#123;_vptr.Base = 0x555555600d58 &lt;vtable <span class="keyword">for</span> Derived+16&gt;&#125;, &lt;No data fields&gt;&#125;</span></span><br><span class="line">(gdb) p d2</span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">4 = &#123;&lt;Base&gt; = &#123;_vptr.Base = 0x555555600d58 &lt;vtable <span class="keyword">for</span> Derived+16&gt;&#125;, &lt;No data fields&gt;&#125;</span></span><br><span class="line">(gdb) </span><br></pre></td></tr></table></figure>
+
+<p>从上面可以看出：</p>
+<ul>
+<li>p1、p2的虚函数表是相同的，d1、d2的虚函数表也是相同的，这说明虚函数表是类静态的，每个类的所有实例共享一个。</li>
+<li>所有的虚函数指针都指向虚函数表偏移16字节（0x10）的位置，而并非指向虚函数表的首地址。</li>
+</ul>
+<p>既然上面给出了虚函数指针所指的地址，那么我们就来继续看下虚函数表到底长什么样。使用gdb<code>x</code>命令打印内存内容，从<code>0x555555600d48</code>开始（0x555555600d58 - 16），以16进制形式（x）打印200字节（b）。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">(gdb) x/200xb 0x555555600d48</span><br><span class="line">0x555555600d48 &lt;_ZTV7Derived&gt;:  0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600d50 &lt;_ZTV7Derived+8&gt;:        0x90    0x0d    0x60    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600d58 &lt;_ZTV7Derived+16&gt;:       0xc0    0x08    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600d60 &lt;_ZTV7Derived+24&gt;:       0xb4    0x08    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600d68 &lt;_ZTV7Derived+32&gt;:       0xcc    0x08    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600d70 &lt;_ZTV4Base&gt;:     0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600d78 &lt;_ZTV4Base+8&gt;:   0xa8    0x0d    0x60    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600d80 &lt;_ZTV4Base+16&gt;:  0xa8    0x08    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600d88 &lt;_ZTV4Base+24&gt;:  0xb4    0x08    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600d90 &lt;_ZTI7Derived&gt;:  0x38    0x54    0xdc    0xf7    0xff    0x7f    0x00    0x00</span><br><span class="line">0x555555600d98 &lt;_ZTI7Derived+8&gt;:        0x68    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600da0 &lt;_ZTI7Derived+16&gt;:       0xa8    0x0d    0x60    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600da8 &lt;_ZTI4Base&gt;:     0xf8    0x47    0xdc    0xf7    0xff    0x7f    0x00    0x00</span><br><span class="line">0x555555600db0 &lt;_ZTI4Base+8&gt;:   0x71    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555600db8: 0x01    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600dc0: 0x01    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600dc8: 0x01    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600dd0: 0xa4    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600dd8: 0x0c    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600de0: 0xf0    0x06    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600de8: 0x0d    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600df0: 0x54    0x09    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600df8: 0x19    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600e00: 0x38    0x0d    0x20    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555600e08: 0x1b    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注：<code>_ZTV</code>表示vtable，<code>_ZTI</code>表示type-info，<code>_ZTS</code>表示type-string（name）。</p>
+</blockquote>
+<p>我们来解释一下上面的内容。首先是<strong>Base的虚函数表</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x555555600d70</td>
+<td>0</td>
+<td>top_offset</td>
+</tr>
+<tr>
+<td>0x555555600d78</td>
+<td>0x555555600da8</td>
+<td>Base的typeinfo表的地址</td>
+</tr>
+<tr>
+<td>0x555555600d80</td>
+<td>0x5555554008a8</td>
+<td>虚函数Foo（Base）的地址</td>
+</tr>
+<tr>
+<td>0x555555600d88</td>
+<td>0x5555554008b4</td>
+<td>虚函数FooNotOverridden的地址</td>
+</tr>
+</tbody></table>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(gdb) info symbol 0x5555554008a8</span><br><span class="line">Base::Foo() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br><span class="line">(gdb) info symbol 0x5555554008b4</span><br><span class="line">Base::FooNotOverridden() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br></pre></td></tr></table></figure>
+
+<p>然后是<strong>Derived的虚函数表</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x555555600d48</td>
+<td>0</td>
+<td>top_offset</td>
+</tr>
+<tr>
+<td>0x555555600d50</td>
+<td>0x555555600d90</td>
+<td>Derived的typeinfo表的地址</td>
+</tr>
+<tr>
+<td>0x555555600d58</td>
+<td>0x5555554008c0</td>
+<td>虚函数Foo（Derived覆写的函数）的地址</td>
+</tr>
+<tr>
+<td>0x555555600d60</td>
+<td>0x5555554008b4</td>
+<td>虚函数FooNotOverridden的地址</td>
+</tr>
+<tr>
+<td>0x555555600d68</td>
+<td>0x5555554008cc</td>
+<td>虚函数AddedVirtualFunc（Derived新加的函数）的地址</td>
+</tr>
+</tbody></table>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(gdb) info symbol 0x5555554008c0</span><br><span class="line">Derived::Foo() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br><span class="line">(gdb) info symbol 0x5555554008cc</span><br><span class="line">Derived::AddedVirtualFunc() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br></pre></td></tr></table></figure>
+
+<p>我们看到，对于基类中定义的虚函数，派生类中的继承的这些虚函数在虚函数表中的偏移和他们在基类虚函数表的偏移是一样的（其实是派生类首先继承了基类的虚函数表，并在次基础上改动，形成并替换成了自己的虚函数表）。而对于派生类覆写的虚函数，对应虚函数表位置上的函数指针就会发生改变，指向覆写的函数；而对于派生类直接继承来的而没有覆写的虚函数，则是原封不动，指向的是基类中的函数。</p>
+<p>此外，若派生类定义了新的虚函数，则会在基类的虚函数表末尾添加条目，存储这些新的虚函数的地址。</p>
+<p>接下来继续看下typeinfo表。首先是<strong>Base的typeinfo表</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x555555600da8</td>
+<td>0x7ffff7dc47f8</td>
+<td>Helper class的虚函数表指针</td>
+</tr>
+<tr>
+<td>0x555555600db0</td>
+<td>0x555555400971</td>
+<td>表示typename的字符串的地址</td>
+</tr>
+</tbody></table>
+<p>然后是<strong>Derived的typeinfo表</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x555555600d90</td>
+<td>0x7ffff7dc5438</td>
+<td>Helper class的虚函数表指针</td>
+</tr>
+<tr>
+<td>0x555555600d98</td>
+<td>0x555555400968</td>
+<td>表示typename的字符串的地址</td>
+</tr>
+<tr>
+<td>0x555555600da0</td>
+<td>0x555555600da8</td>
+<td>指向Base的typeinfo表</td>
+</tr>
+</tbody></table>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">(gdb) info symbol 0x7ffff7dc47f8</span><br><span class="line">vtable <span class="keyword">for</span> __cxxabiv1::__class_type_info + 16 <span class="keyword">in</span> section .data.rel.ro of /usr/lib/x86_64-linux-gnu/libstdc++.so.6</span><br><span class="line">(gdb) info symbol 0x7ffff7dc5438</span><br><span class="line">vtable <span class="keyword">for</span> __cxxabiv1::__si_class_type_info + 16 <span class="keyword">in</span> section .data.rel.ro of /usr/lib/x86_64-linux-gnu/libstdc++.so.6</span><br><span class="line">(gdb) x/s 0x555555400971</span><br><span class="line">0x555555400971 &lt;_ZTS4Base&gt;:     <span class="string">&quot;4Base&quot;</span></span><br><span class="line">(gdb) x/s 0x555555400968</span><br><span class="line">0x555555400968 &lt;_ZTS7Derived&gt;:  <span class="string">&quot;7Derived&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="多继承"><a href="#多继承" class="headerlink" title="多继承"></a>多继承</h2><p>前面的讨论限于单继承，现在我们来看下多继承的情形，考虑如下代码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Base1</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Foo</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">FooNotOverridden</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line">    <span class="type">int</span> base1_data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Base2</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Fun</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">FunNotOverridden</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line">    <span class="type">int</span> base2_data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Derived</span> : <span class="keyword">public</span> Base1, <span class="keyword">public</span> Base2  &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">Foo</span><span class="params">()</span> <span class="keyword">override</span> </span>&#123;&#125;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">Fun</span><span class="params">()</span> <span class="keyword">override</span> </span>&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">AddedVirtualFunc</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line">    <span class="type">int</span> derived_data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Base1 base1;</span><br><span class="line">    Base2 base2;</span><br><span class="line">    Derived derived1;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>派生类分别从两个基类中继承了两个虚函数，并且各重写了其中一个。此外，派生类还引入了自己的虚函数。</p>
+<p>使用gdb分别查看base1、base2、derived1的内存布局：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">(gdb) p base1</span><br><span class="line">$1 = &#123;_vptr.Base1 = 0x555555601d50 &lt;vtable for Base1+16&gt;, base1_data = 1432403464&#125;</span><br><span class="line">(gdb) p base2</span><br><span class="line">$2 = &#123;_vptr.Base2 = 0x555555601d30 &lt;vtable for Base2+16&gt;, base2_data = 1430260413&#125;</span><br><span class="line">(gdb) p derived1</span><br><span class="line">$3 = &#123;&lt;Base1&gt; = &#123;_vptr.Base1 = 0x555555601ce0 &lt;vtable for Derived+16&gt;, base1_data = 0&#125;, &lt;Base2&gt; = &#123;_vptr.Base2 = 0x555555601d10 &lt;vtable for Derived+64&gt;, </span><br><span class="line">    base2_data = 1430259760&#125;, derived_data = 21845&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到derived1内有两根vptr指针，初学C++者可能认为只有1个或3个vptr指针，实际上只有两个。Derived1和Base1合用一个vptr，Base1是Derived类派生列表中的第一个类，也就是主基类。*<em>因为动态类型为<code>Derived*</code>的指针有可能被传递给静态类型为<code>Base1*</code>或<code>Base2*</code>类型的指针，这都要求this指针指向内存中的正确偏移，静态类型<code>Base1</code><em>或<code>Base2*</code>的指针不知道也不应该对实际所指之物作出假设。</em></em></p>
+<p>为了性能考虑，实际上只有一张虚函数表<code>vtable for Derived</code>，derived1内的<code>_vptr.Base1</code>、<code>_vptr.Base2</code>两根虚指针不过是指向了这张虚函数表的不同偏移位置。来看下这张虚函数表的内容：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">(gdb) x/250xb  0x555555601cd0</span><br><span class="line">0x555555601cd0 &lt;_ZTV7Derived&gt;:  0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555601cd8 &lt;_ZTV7Derived+8&gt;:        0x60    0x1d    0x60    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601ce0 &lt;_ZTV7Derived+16&gt;:       0xc0    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601ce8 &lt;_ZTV7Derived+24&gt;:       0x9c    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601cf0 &lt;_ZTV7Derived+32&gt;:       0xcc    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601cf8 &lt;_ZTV7Derived+40&gt;:       0xde    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d00 &lt;_ZTV7Derived+48&gt;:       0xf0    0xff    0xff    0xff    0xff    0xff    0xff    0xff</span><br><span class="line">0x555555601d08 &lt;_ZTV7Derived+56&gt;:       0x60    0x1d    0x60    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d10 &lt;_ZTV7Derived+64&gt;:       0xd7    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d18 &lt;_ZTV7Derived+72&gt;:       0xb4    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d20 &lt;_ZTV5Base2&gt;:    0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555601d28 &lt;_ZTV5Base2+8&gt;:  0x98    0x1d    0x60    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d30 &lt;_ZTV5Base2+16&gt;: 0xa8    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d38 &lt;_ZTV5Base2+24&gt;: 0xb4    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d40 &lt;_ZTV5Base1&gt;:    0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555601d48 &lt;_ZTV5Base1+8&gt;:  0xa8    0x1d    0x60    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d50 &lt;_ZTV5Base1+16&gt;: 0x90    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d58 &lt;_ZTV5Base1+24&gt;: 0x9c    0x09    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d60 &lt;_ZTI7Derived&gt;:  0xf8    0x54    0xdc    0xf7    0xff    0x7f    0x00    0x00</span><br><span class="line">0x555555601d68 &lt;_ZTI7Derived+8&gt;:        0xf8    0x0a    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d70 &lt;_ZTI7Derived+16&gt;:       0x00    0x00    0x00    0x00    0x02    0x00    0x00    0x00</span><br><span class="line">0x555555601d78 &lt;_ZTI7Derived+24&gt;:       0xa8    0x1d    0x60    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d80 &lt;_ZTI7Derived+32&gt;:       0x02    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555601d88 &lt;_ZTI7Derived+40&gt;:       0x98    0x1d    0x60    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601d90 &lt;_ZTI7Derived+48&gt;:       0x02    0x10    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555601d98 &lt;_ZTI5Base2&gt;:    0xf8    0x47    0xdc    0xf7    0xff    0x7f    0x00    0x00</span><br><span class="line">0x555555601da0 &lt;_ZTI5Base2+8&gt;:  0x01    0x0b    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601da8 &lt;_ZTI5Base1&gt;:    0xf8    0x47    0xdc    0xf7    0xff    0x7f    0x00    0x00</span><br><span class="line">0x555555601db0 &lt;_ZTI5Base1+8&gt;:  0x08    0x0b    0x40    0x55    0x55    0x55    0x00    0x00</span><br><span class="line">0x555555601db8: 0x01    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555601dc0: 0x01    0x00    0x00    0x00    0x00    0x00    0x00    0x00</span><br><span class="line">0x555555601dc8: 0x01    0x00</span><br></pre></td></tr></table></figure>
+
+<p>下面解释一下。<strong>Derived虚函数表</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x555555601cd0</td>
+<td>0</td>
+<td>top_offset</td>
+</tr>
+<tr>
+<td>0x555555601cd8</td>
+<td>0x555555601d60</td>
+<td>Derived的typeinfo表的地址</td>
+</tr>
+<tr>
+<td>0x555555601ce0</td>
+<td>0x5555554009c0</td>
+<td>虚函数Derived::Foo的地址</td>
+</tr>
+<tr>
+<td>0x555555601ce8</td>
+<td>0x55555540099c</td>
+<td>虚函数Base1::FooNotOverridden的地址</td>
+</tr>
+<tr>
+<td>0x555555601cf0</td>
+<td>0x5555554009cc</td>
+<td>虚函数Derived::Fun的地址</td>
+</tr>
+<tr>
+<td>0x555555601cf8</td>
+<td>0x5555554009de</td>
+<td>虚函数Derived::AddedVirtualFunc的地址</td>
+</tr>
+<tr>
+<td>0x555555601d00</td>
+<td>-16</td>
+<td>top_offset</td>
+</tr>
+<tr>
+<td>0x555555601d08</td>
+<td>0x555555601d60</td>
+<td>Derived的typeinfo表的地址</td>
+</tr>
+<tr>
+<td>0x555555601d10</td>
+<td>0x5555554009d7</td>
+<td>non-virtual thunk to Derived::Fun的地址</td>
+</tr>
+<tr>
+<td>0x555555601d18</td>
+<td>0x5555554009b4</td>
+<td>虚函数Base2::FunNotOverridden的地址</td>
+</tr>
+</tbody></table>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">(gdb) info symbol 0x555555601d60</span><br><span class="line">typeinfo <span class="keyword">for</span> Derived <span class="keyword">in</span> section .data.rel.ro of /home/hickey/algorithms/a.out</span><br><span class="line">(gdb) info symbol 0x5555554009c0</span><br><span class="line">Derived::Foo() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br><span class="line">(gdb) info symbol 0x55555540099c</span><br><span class="line">Base1::FooNotOverridden() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br><span class="line">(gdb) info symbol 0x5555554009cc</span><br><span class="line">Derived::Fun() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br><span class="line">(gdb) info symbol 0x5555554009de</span><br><span class="line">Derived::AddedVirtualFunc() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br><span class="line">(gdb) info symbol 0x5555554009d7</span><br><span class="line">non-virtual thunk to Derived::Fun() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br><span class="line">(gdb) info symbol 0x5555554009b4</span><br><span class="line">Base2::FunNotOverridden() <span class="keyword">in</span> section .text of /home/hickey/algorithms/a.out</span><br></pre></td></tr></table></figure>
+
+<p><strong>Derived typeinfo表</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x555555601d60</td>
+<td>0x7ffff7dc54f8</td>
+<td></td>
+</tr>
+<tr>
+<td>0x555555601d68</td>
+<td>0x555555400af8</td>
+<td></td>
+</tr>
+<tr>
+<td>0x555555601d70</td>
+<td>0x0200000000</td>
+<td></td>
+</tr>
+<tr>
+<td>0x555555601d78</td>
+<td>0x555555601da8</td>
+<td></td>
+</tr>
+<tr>
+<td>0x555555601d80</td>
+<td>0x02</td>
+<td></td>
+</tr>
+<tr>
+<td>0x555555601d88</td>
+<td>0x555555601d98</td>
+<td></td>
+</tr>
+<tr>
+<td>0x555555601d90</td>
+<td>0x1002</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>如<code>Derived d; Base1* p1 = &amp;d; Base2* p2 = &amp;d </code>，可以打印出p1和p2，看看他们存的地址，会发现他们并不相等，而p1和&amp;d的数值却相等。这就说明，当主基类指针实际指向派生类对象时，其指针的指向和派生类指针指向该派生类对象时的指向相同（都是指向<code>_vptr.Base1</code>的位置）；而当非主基类指针实际指向派生类对象时，其指针的指向和派生类指针指向该派生类对象时的指向不同（非主基类指针指向<code>_vptr.Base2</code>的位置）。这就说明转换的时候，编译器为我们隐式地偏移了this指针（这个转换是编译期安插的偏移代码，运行时执行后真正偏移）。</p>
+<p>派生类重写主基类的虚函数容易实现，因为他们的this指针指向的位置相同，直接在虚函数表的对应位置替换为覆写的函数指针即可，这样一来，无论通过静态类型是派生类的指针还是主基类的指针调用这个虚函数，实际调用的都是派生类的虚函数，即只与动态类型有关和静态类型无关。</p>
+<p>但非主基类指针就不一样了，他和派生类的this指针指向的位置不同。</p>
+<p><strong>可能有人会说，为什么要将Base2::Fun替换为non-virtual thunk to Derived::Fun，直接像Foo那样（用Derived::Foo替换Base1::Foo），直接替换为Derived::Fun不就好了吗？</strong></p>
+<p><strong>很多人可能忽略了调用成员函数需要隐式传入this指针：即我们通过非主基类指针实际调用派生类重写的虚函数时，我们希望传入的是派生类的this指针，而不是在此之上偏移过的非主基类指针。因此，我们在调用时，需要临时将非主基类指针偏移回到派生类的this指针，并将偏移回的临时指针传入调用的虚函数。</strong></p>
+<p>看看这个non-virtual thunk to Derived::Fun()长什么样：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">(gdb) info address non-virtual thunk to Derived::Fun()</span><br><span class="line">Symbol <span class="string">&quot;non-virtual thunk to Derived::Fun()&quot;</span> is at 0x5555554009d7 <span class="keyword">in</span> a file compiled without debugging.</span><br><span class="line">(gdb) disas 0x5555554009d7</span><br><span class="line">Dump of assembler code <span class="keyword">for</span> <span class="keyword">function</span> _ZThn16_N7Derived3FunEv:</span><br><span class="line">   0x00005555554009d7 &lt;+0&gt;:     sub    <span class="variable">$0x10</span>,%rdi</span><br><span class="line">   0x00005555554009db &lt;+4&gt;:     jmp    0x5555554009cc &lt;Derived::Fun()&gt;</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+
+<p>将rdi减去0x10就是减去16（即虚函数表中的top_offset），rdi中存着第一个参数–非主基类指针（this指针）。然后调用Derived::Fun。</p>
+<h2 id="菱形继承—虚继承"><a href="#菱形继承—虚继承" class="headerlink" title="菱形继承—虚继承"></a>菱形继承—虚继承</h2><h2 id="构造函数、析构函数、delete和虚函数"><a href="#构造函数、析构函数、delete和虚函数" class="headerlink" title="构造函数、析构函数、delete和虚函数"></a>构造函数、析构函数、delete和虚函数</h2><blockquote>
+<p> TODO</p>
+</blockquote>
+<h2 id="虚函数和默认参数"><a href="#虚函数和默认参数" class="headerlink" title="虚函数和默认参数"></a>虚函数和默认参数</h2><blockquote>
+<p>TODO</p>
+</blockquote>
+<h2 id="虚函数如何调用"><a href="#虚函数如何调用" class="headerlink" title="虚函数如何调用"></a>虚函数如何调用</h2><p>在C++中，虚函数的地址在编译期就可以确定了，在编译期，（有虚函数的）每个类被分配一个虚函数表，同时为了找到虚函数，每个虚函数被指派一个表格索引值，并填上虚函数的地址。同时，通过指针或引用的虚函数调用代码，会转化为通过虚函数表指针、虚函数表索引值访问虚函数地址，然后再调用的代码。有人可能会问，<strong>这个虚函数表索引值能在编译期确定吗</strong>？其实是可以的，这个索引值完全可以通过指针的静态类型确定。而且，不是虚函数的不会被转化，编译期肯定知道哪个函数是虚函数。<strong>通过基类指针也无法调用派生类中新引入的虚函数或者非虚函数。新引入的虚函数无法在编译期通过指针静态类型确定虚函数索引值；非虚函数根本不通过虚函数表，指针静态类型是什么，就调用哪个类里的函数。</strong></p>
+<p>执行期要做的，是在类的实例的构造函数被调用时，隐式初始化虚函数表指针，使之指向编译期就备好的虚函数表。遇到通过指针或引用的虚函数调用时，实际执行的是之前编译期转化的调用代码。</p>
+<h2 id="构造函数、析构函数与虚函数"><a href="#构造函数、析构函数与虚函数" class="headerlink" title="构造函数、析构函数与虚函数"></a>构造函数、析构函数与虚函数</h2><h1 id="静态类成员函数"><a href="#静态类成员函数" class="headerlink" title="静态类成员函数"></a>静态类成员函数</h1><h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p>[1]  <em>C++ Primer 5e</em>.<br>[2]  <em>Inside The Object Model</em>.<br>[3]  <a target="_blank" rel="noopener" href="https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling">Itanium C++ ABI (itanium-cxx-abi.github.io)</a><br>[4]  <a target="_blank" rel="noopener" href="https://shaharmike.com/cpp/vtable-part1/">C++ vtables - Part 1 - Basics | Shahar Mike’s Web Spot</a></p>
+</div></div><div class="post-main post-comment"><div id="disqus_thread"></div><script type="text/javascript">
+var disqus_shortname = 'hickey-1';
+var disqus_identifier = '2022/06/30/C++函数语义-非成员函数、普通成员函数、虚函数、静态成员函数/';
+var disqus_title = 'C++函数语义-非成员函数、普通成员函数、虚函数、静态成员函数';
+var disqus_url = 'http://hickey.ltd/2022/06/30/C++%E5%87%BD%E6%95%B0%E8%AF%AD%E4%B9%89-%E9%9D%9E%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0%E3%80%81%E6%99%AE%E9%80%9A%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0%E3%80%81%E8%99%9A%E5%87%BD%E6%95%B0%E3%80%81%E9%9D%99%E6%80%81%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0/';
+(function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a target="_blank" rel="noopener" href="http://disqus.com" class="dsq-brlink">Blog comments powered by <span class="logo-disqus">Disqus</span></a></div></article><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/lato-font/3.0.0/css/lato-font.min.css"><link rel="stylesheet" type="text/css" href="/css/number_title.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcdn.net/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

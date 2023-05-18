@@ -1,0 +1,105 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content=" id=&quot;Intro&quot;&gt;&lt;a href=&quot;#Intro&quot; class=&quot;headerlink&quot; title=&quot;Intro&quot;&gt;&lt;/a&gt;Intro&lt;/h1&gt;&lt;p&gt;HEVC的帧内预测模式CU块的PU划分模式只有&lt;code&gt;PART_2N*2N&lt;/code&gt;和&lt;code&gt;PART_N*N&lt;/code&gt;两种，不如Inter Prediction Mode那么多。此外，如果当前CU块大小不是最小大小（8*8），那么只能选用&lt;code&gt;PART_2N*2N&lt;/code&gt;模式。因为如果选用了&lt;code&gt;PART_N*N&lt;/code&gt;模式，那么当前CU被划分为4个小的PU，但当前CU不是最小大小，还可以继续按照四叉树划分，因此这种将当前CU划分为4个小PU的做法完全可以被先把当前CU按四叉树切分为四个小CU，再在小CU上使用&lt;code&gt;PART_2N*2N&lt;/code&gt;的划分方式取代。如果当前CU块大小是最小大小（8*8），&lt;code&gt;PART_N*N&lt;/code&gt;划分方式才可以使用。"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>Brief on Intra Prediction of HEVC | Hickey</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.2"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a><a class="sidebar-nav-item" href="/about">About</a></nav><div class="container post-meta"><div class="post-time">2023-03-18</div> <div class="post-tags"><a class="post-tag-none-link" href="/tags/HEVC/" rel="tag">#HEVC</a></div></div></div><div class="container post-header"><p class="post-title" align="center">Brief on Intra Prediction of HEVC</p></div><hr class="_title_line"><div class="container post-toc"><details class="toc" open><summary class="toc-accordion">Table of Contents</summary><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Intro"><span class="toc-number">1.</span> <span class="toc-text">Intro</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Reference-sample-generation"><span class="toc-number">2.</span> <span class="toc-text">Reference sample generation</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Reference-Sample-Substitution"><span class="toc-number">2.1.</span> <span class="toc-text">Reference Sample Substitution</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Filtering-process-of-reference-samples"><span class="toc-number">2.2.</span> <span class="toc-text">Filtering process of reference samples</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Intra-sample-prediction"><span class="toc-number">3.</span> <span class="toc-text">Intra sample prediction</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Planar-Prediction"><span class="toc-number">3.1.</span> <span class="toc-text">Planar Prediction</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DC-Prediction"><span class="toc-number">3.2.</span> <span class="toc-text">DC Prediction</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Angular-Prediction"><span class="toc-number">3.3.</span> <span class="toc-text">Angular Prediction</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Post-processing-for-Predicted-Samples"><span class="toc-number">3.4.</span> <span class="toc-text">Post-processing for Predicted Samples</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Intra-Mode-Coding"><span class="toc-number">4.</span> <span class="toc-text">Intra Mode Coding</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Prediction-of-Luma-Intra-Mode"><span class="toc-number">4.1.</span> <span class="toc-text">Prediction of Luma Intra Mode</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Derived-Mode-for-Chroma-Intra-Prediction"><span class="toc-number">4.2.</span> <span class="toc-text">Derived Mode for Chroma Intra Prediction</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Syntax-Design-for-Intra-Mode-Coding"><span class="toc-number">4.3.</span> <span class="toc-text">Syntax Design for Intra Mode Coding</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Encoding-Algorithms"><span class="toc-number">4.4.</span> <span class="toc-text">Encoding Algorithms</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#References"><span class="toc-number">5.</span> <span class="toc-text">References</span></a></li></ol></details></div><blockquote> <p>本文使用CC BY-NC-SA 4.0协议。禁止商业转载，非商业转载请注明作者和出处。</p></blockquote><div class="container post-content"><h1 id="Intro"><a href="#Intro" class="headerlink" title="Intro"></a>Intro</h1><p>HEVC的帧内预测模式CU块的PU划分模式只有<code>PART_2N*2N</code>和<code>PART_N*N</code>两种，不如Inter Prediction Mode那么多。此外，如果当前CU块大小不是最小大小（8*8），那么只能选用<code>PART_2N*2N</code>模式。因为如果选用了<code>PART_N*N</code>模式，那么当前CU被划分为4个小的PU，但当前CU不是最小大小，还可以继续按照四叉树划分，因此这种将当前CU划分为4个小PU的做法完全可以被先把当前CU按四叉树切分为四个小CU，再在小CU上使用<code>PART_2N*2N</code>的划分方式取代。如果当前CU块大小是最小大小（8*8），<code>PART_N*N</code>划分方式才可以使用。</p>
+<p>HEVC的帧内预测模式一共有35种，分别为<code>Intra_Planar</code>（0）、<code>Intra_DC</code>（1）、<code>Intra_Angular</code>（2-34）模式。<br>Planar模式适用于缓慢变化的区域。DC模式适用于大面积平坦区域。Angular模式除了包含Horizontal、Vertical、Diagonal方向外，还包含了在这些方向基础上偏移某些角度的方向。在角度上靠近正垂直方向和正水平方向的那些角度区域方向排列比较密集，而在对角线方向附近方向分布较稀疏，这是根据实验数据设置的。</p>
+<p>不同于AVC只用Left和Above方向上的像素点作为参考像素，HEVC还增加了Lower Left、Above Right方向上的像素点作为参考像素。<br>根据预测方向和块大小，HEVC还会对参考像素进行平滑处理（Reference Samples Smoothing）。DC模式不需要这种处理，因为DC模式所用预测值本身是所有参考像素的平均。</p>
+<p>如果是DC模式、正水平（模式10）或正垂直方向（模式26）模式，为了消除PU块边界的不连续性，在完成基本的预测后，还要对本PU内预测后的边界进行平滑处理（Boundary Value Smoothing）。</p>
+<h1 id="Reference-sample-generation"><a href="#Reference-sample-generation" class="headerlink" title="Reference sample generation"></a>Reference sample generation</h1><p>在HEVC中，PU中的像素的帧内预测值是根据所选的帧内预测模式从重建的参考像素中推断的。为了保证所有帧内预测模式的可用性，避免受限于参考像素的可用性，HEVC引入了参考像素替换技术（Reference Sample Substitution）。此外，还有一个自适应滤波过程，可以根据帧内预测模式、块的大小和方向性对参考像素进行平滑预处理，<em>以增加可用参考像素的多样性</em>。</p>
+<h2 id="Reference-Sample-Substitution"><a href="#Reference-Sample-Substitution" class="headerlink" title="Reference Sample Substitution"></a>Reference Sample Substitution</h2><p>导致参考像素不可用的原因有很多，比如当前PU位于图像边界、slice边界。<br>最严重的情形是没有一个可用的参考像素，那么在这种情况下，HEVC选择用bitdepth所能表示最大像素值的半值（例如，对于8比特位深来说，这个值为128）来替换所有这些不可用的参考像素值。<br>当至少有一个参考像素可用时：</p>
+<ol>
+<li>若$p[-1][2N-1]$不可用，顺时针扫描参考像素，用遇到的第一个可用像素值替换$p[-1][2N-1]$（$p[x][y]$<strong>表示第x列第y行像素，注意与矩阵的区别</strong>）。</li>
+<li>若除$p[-1][2N-1]$之外的参考像素不可用，用与其逆时针相邻的第一个像素值替换它。</li>
+</ol>
+<h2 id="Filtering-process-of-reference-samples"><a href="#Filtering-process-of-reference-samples" class="headerlink" title="Filtering process of reference samples"></a>Filtering process of reference samples</h2><p>由于参考像素可能是经过替换得到的，加之其他的一切原因，参考像素值之间可能有较大的跳跃性，为避免这种跳跃性对后续确定最优预测方向的影响，就需要在用这些参考像素预测当前PU内的像素之前进行一些预处理，称为<strong>reference samples smoothing</strong>。<br>若使用了<code>Intra_DC</code>模式或PU块大小为<code>4*4</code>，那么这种smoothing不被使用。否则根据预测方向和块大小选择使用两种reference samples smoothing中的一种：</p>
+<ul>
+<li><p>如果当前PU块大小为<code>32*32</code>（即HEVC支持的最大PU）且满足由下式确定的<strong>平坦度</strong>条件：</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230327145020-2023-03-27-14-50-21.png"></p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230327145043-2023-03-27-14-50-44.png"></p>
+<p>其中b为像素位深。上式分别度量了参考像素行和参考像素列的两端像素的均值和中间位置像素的差异，若差异足够小，就认为足够平坦，那么就用所谓的<strong>strong intra smoothing</strong>方法（称之为strong因为它几乎替换了所有的参考像素）。具体来说，就是使用左上角、左下角、右上角的三个参考像素$p[-1][-1]$、$p[-1][63]$、$p[63][-1]$对其他参考像素进行线性插值，公式如下，过程如下图中的子图b所示。<img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316172850-2023-03-16-17-28-50.png"><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316172938-2023-03-16-17-29-39.png"><br>这种方法旨在消除<strong>块效应</strong>或<strong>等高线伪影</strong>（blocking and contouring artifact)，可以通过SPS中的参数strong_intra_smoothing_enabled_flag选择是否开启这种滤波。</p>
+</li>
+<li><p>否则，使用三抽头（three-tap filtering）$[\text{1 2 1}]/4$滤波。保持最左下角的像素$p[-1][2N-1]$、最右上角的像素$p[2N-1][-1]$不变，对其他参考像素使用相邻的两个参考像素和自身进行<code>[1 2 1]</code>加权平均，如下图中的子图a所示。公式如下：<img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316173026-2023-03-16-17-30-27.png"><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316173229-2023-03-16-17-32-30.png"><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316173158-2023-03-16-17-31-59.png"></p>
+</li>
+</ul>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316172539-2023-03-16-17-25-40-2023-03-16-19-50-22.png"></p>
+<h1 id="Intra-sample-prediction"><a href="#Intra-sample-prediction" class="headerlink" title="Intra sample prediction"></a>Intra sample prediction</h1><p>如前所述，HEVC支持Planar、DC和角度模式。为了进一步提高预测质量，对于DC模式和角度模式中的正水平和正竖直方向，HEVC还应用了后处理滤波，以提高预测信号在块边界的连续性。</p>
+<h2 id="Planar-Prediction"><a href="#Planar-Prediction" class="headerlink" title="Planar Prediction"></a>Planar Prediction</h2><p>虽然角度预测为具有显著边缘的结构提供了良好的近似，但它会在平滑的图像区域中产生一些可见的等高线伪影。类似地，当以低或中等码率应用DC预测时，通常造成平滑图像区域的块状伪影。HEVC的Planar预测旨在克服这些问题，即能够在块边界上生成一个不存在不连续的预测面。公式如下：</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316201904-2023-03-16-20-19-05.png"></p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316201932-2023-03-16-20-19-33.png"></p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316201028-2023-03-16-20-10-29.png"></p>
+<h2 id="DC-Prediction"><a href="#DC-Prediction" class="headerlink" title="DC Prediction"></a>DC Prediction</h2><p>在DC模式中，块内的所有像素都用一个值预测，这个值是参考像素（注意不包含左上角、左下方和右上方的参考像素）的均值。</p>
+<p>小于等于16*16的亮度块还要经过滤波后处理，以平滑上边界和左边界。</p>
+<h2 id="Angular-Prediction"><a href="#Angular-Prediction" class="headerlink" title="Angular Prediction"></a>Angular Prediction</h2><p>角度模式是为了建模视频中常见的有方向性的区域，HEVC的角度模式支持33种预测方向。</p>
+<p>在自然图像中，水平和竖直方向的纹理比对角线方向的纹理出现的频率更高，因此HEVC靠近竖直和水平方向的角度比较密集，而靠近对角线方向的角度比较稀疏，如下图所示。</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230316192002-2023-03-16-19-20-02.png"></p>
+<p>为了方便预测的统一计算，将左边和上边的参考像素存储到一个一维数组中。对于模式2-10和模式26-34，只有左边或上边的参考像素被用到，因此这种情况下可以直接将一侧的参考像素拷贝到一维数组中。而对于模式11-17和模式18-25，左边和上边的参考像素都要用到，因此需要一种投影方法映射到一维数组中。对于预测过程，预测值是选定的方向且经过待预测像素的直线分别与左侧参考像素列和上侧参考像素行的两个交点像素的线性插值（也有可能只用到一个参考像素）。</p>
+<p>具体投影和预测过程参考[5]，解释得比较详细。</p>
+<h2 id="Post-processing-for-Predicted-Samples"><a href="#Post-processing-for-Predicted-Samples" class="headerlink" title="Post-processing for Predicted Samples"></a>Post-processing for Predicted Samples</h2><p>一些预测模式会在预测块的边界产生不连续性，这种情形在DC模式、模式10和模式26下最为明显。这是因为DC模式将块内所有值填充为一个值，模式10和模式26分别只是用了一侧的参考样本，因此DC模式在上边界和左边界会产生不连续性，而模式10和模式26分别会在上边界和左边界上产生不连续性。</p>
+<p>为了减少上述情况下块边界处的不连续性，预测块的边界值要经过滤波。</p>
+<p>注意这种后处理的滤波只对预测块小于32*32并且使用上述3种模式的情形使用，并且预测边界平滑只应用于亮度分量（这是由于色度分量的预测通常比较平滑，相比于引入的开销，对色度分量预测边界进行平滑处理只能获得较少的预测质量提升）。</p>
+<h1 id="Intra-Mode-Coding"><a href="#Intra-Mode-Coding" class="headerlink" title="Intra Mode Coding"></a>Intra Mode Coding</h1><p>帧内预测模式的增加虽然有助于提高编码质量，但也会引入更多开销用于在码流中指明选定的预测模式，因此，需要对预测模式的编码仔细设计。</p>
+<h2 id="Prediction-of-Luma-Intra-Mode"><a href="#Prediction-of-Luma-Intra-Mode" class="headerlink" title="Prediction of Luma Intra Mode"></a>Prediction of Luma Intra Mode</h2><p>对于亮度分量，HEVC推断出3种最可能的模式，用于下一步帧内预测模式的选择。这三种模式可能存在的冗余性（即存在相同模式）也被考虑，冗余的模式被替换成其他模式。</p>
+<p>HEVC根据相邻PU（具体来说，是左边和上边的PU，分别记为A和B）的模式为当前PU确定3种最可能的模式。如果相邻PU没有使用帧内预测模式，那么将其视为使用了DC模式。并且如果B位于当前CTU之外，那么也认为B使用了DC模式，以避免为帧内模式重建引入额外的行缓冲。MPM的确定过程的流程图如下：</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230327151538-2023-03-27-15-15-39.png"></p>
+<p>如果A和B的模式不同，那么最可能的模式MPM[0]和MPM[1]分别被设置为A和B的模式，剩下的MPM[2]根据下面的规则选定：</p>
+<ul>
+<li>如果A和B都不是Planar模式，那么MPM[2]设定为Planar模式。</li>
+<li>如果A和B都不是DC模式，那么MPM[2]设定为DC模式。</li>
+<li>否则（这种情况下，A和B一个为Planar模式另一个为DC模式），MPM[2]设定为模式26（即垂直模式）。</li>
+</ul>
+<p>如果A和B的模式相同，那么使用下面的方法确定3种MPM：</p>
+<ul>
+<li>如果A（同B的模式）为非角度模式，那么MPM[0]、MPM[1]、MPM[2]分别设为Planar、DC、垂直模式26。</li>
+<li>如果A（同B的模式）为角度模式，那么MPM[0]设置为A的模式，<em>MPM[1]和MPM[2]分别设置为在除去A的模式的32种角度模式中与A模式相邻的角度模式，需要注意模式2与模式3和模式33相邻，模式34与模式33和模式3相邻</em>。</li>
+</ul>
+<p>在用上面的方法确定了MPM后，MPM[0]、MPM[1]、MPM[2]按照模式升序进行排序。</p>
+<p>如果当前PU最终选定的帧内预测模式在3个MPM中，那么只需传输索引（即0、1或2）。否则使用5个bit来传输该帧内预测模式，因为35种帧内预测模式除去3个MPM还剩32种模式，用5个bit可以表示。</p>
+<h2 id="Derived-Mode-for-Chroma-Intra-Prediction"><a href="#Derived-Mode-for-Chroma-Intra-Prediction" class="headerlink" title="Derived Mode for Chroma Intra Prediction"></a>Derived Mode for Chroma Intra Prediction</h2><p>对于色度分量，由于在大部分情况下色度分量倾向于使用和亮度分量相同的帧内预测模式，因此HEVC引入了一个INTRA_DERIVED模式，用以指出色度分量使用和亮度分量相同的帧内预测模式。一个色度分量的帧内预测模式只可以从Planar、模式26、模式10、DC模式和INTRA_DERIVED模式中选择。如果INTRA_DERIVED即亮度分量的帧内预测模式是Planar、模式26、模式10、DC模式其中之一，那么Planar、模式26、模式10、DC模式都不被支持，都被替换为模式34。</p>
+<h2 id="Syntax-Design-for-Intra-Mode-Coding"><a href="#Syntax-Design-for-Intra-Mode-Coding" class="headerlink" title="Syntax Design for Intra Mode Coding"></a>Syntax Design for Intra Mode Coding</h2><p>对于亮度分量，CU层次的语法元素prev_intra_luma_pred_flag指明该亮度PB最终使用的帧内预测模式是否在MPMs中：</p>
+<ul>
+<li><p>如果prev_intra_luma_pred_flag为1，表明当前亮度PB最终使用的帧内预测模式在MPMs中，则进一步使用语法元素mpm_idx指明MPMs中的索引。</p>
+</li>
+<li><p>否则prev_intra_luma_pred_flag为0，长度为5 bit的语法元素rem_intra_luma_pred_mode用以指出在剩余的32种模式中最终使用了哪一种预测模式。在解码器端，给定rem_intra_luma_pred_mode，用下面的方法推断出当前亮度PB真正使用的帧内预测模式。</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230318201643-2023-03-18-20-16-44.png"></p>
+<p>在编码器端，记当前亮度PB真正使用的帧内预测模式为Mode，rem_intra_luma_pred_mode的值按下述方法确定：令L为Mode，上图中for循环中L的加1变为减1，最终rem_intra_luma_pred_mode的值为L的值。</p>
+</li>
+</ul>
+<p>对于色度分量，CU层次的语法元素intra_chroma_pred_mode用以指明色度分量所最终使用的帧内预测模式，根据下面的表格确定该语法元素的值：</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230318201509-2023-03-18-20-15-10.png"></p>
+<h2 id="Encoding-Algorithms"><a href="#Encoding-Algorithms" class="headerlink" title="Encoding Algorithms"></a>Encoding Algorithms</h2><p>对于HEVC来说，对所有35种帧内预测模式都计算率失真损失是不切实际的，会导致计算量巨大。在HEVC的参考软件HM中，预测值和原始像素值之间的SATD（sum of absolute transformed differences）用来减少最终输入到率失真优化中的预测模式数量。</p>
+<p>对于亮度分量来说，最终进入RDO流程的候选帧内预测模式的数量取决于PU的大小，4*4和8*8的PU数量为8，其余大小的PU候选数量为3。对于候选模式和MPMs，使用预测和变换编码计算实际使用的位数和造成的失真，最终率失真损失最小的模式被选择为亮度分量的帧内预测模式。</p>
+<p>对于色度分量来说，由于可使用的帧内预测模式远小于亮度分量的35种，因此，色度分量的所有可用的帧内预测模式都进入RDO流程。</p>
+<p>实验证明这种优化方案可以在视频客观质量相同的情形下减少3倍的编码复杂度，而码率的增加少于1%。一些论文还提出了另外的帧内预测模式快速选择算法。</p>
+<p>HECV和AVC的帧内预测模式的对比如下：</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230318221346-2023-03-18-22-13-47.png"></p>
+<h1 id="References"><a href="#References" class="headerlink" title="References"></a>References</h1><blockquote>
+<p>[1] <a target="_blank" rel="noopener" href="https://handle.itu.int/11.1002/1000/14660">Recommendation ITU-T H.265.</a><br>[2] Gary J. Sullivan, Jens-Rainer Ohm, Woo-Jin Han, and Thomas Wiegand. <em>Overview of the High Efficiency Video Coding (HEVC) Standard</em>.<br>[3] Vivienne Sze, Madhukar Budagavi, Gary J. Sullivan. <em>High Efficiency Video Coding (HEVC) Algorithms and Architectures</em>.<br>[4] JCT-VC. <em>High Efficiency Video Coding (HEVC) Test Model 16 (HM 16) Improved Encoder Description Update 13</em>.<br>[5] 万帅, 杨付正. 新一代高效视频编码H.265/HEVC：原理、标准与实现.</p>
+</blockquote>
+</div></div><script type="text/x-mathjax-config">
+   MathJax.Hub.Config({"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"], linebreaks: { automatic:true }, EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50) },
+        tex2jax: { inlineMath: [ ["$", "$"], ["\\(","\\)"] ], displayMath: [ ["$$","$$"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno",skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']},
+        TeX: {  noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } }, Macros: { href: "{}" } },
+        messageStyle: "none"
+    }); 
+</script>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+<script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><div class="post-main post-comment"><div id="disqus_thread"></div><script type="text/javascript">
+var disqus_shortname = 'hickey-1';
+var disqus_identifier = '2023/03/18/Intra Prediction  of HEVC/';
+var disqus_title = 'Brief on Intra Prediction of HEVC';
+var disqus_url = 'http://hickey.ltd/2023/03/18/Intra%20Prediction%20%20of%20HEVC/';
+(function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a target="_blank" rel="noopener" href="http://disqus.com" class="dsq-brlink">Blog comments powered by <span class="logo-disqus">Disqus</span></a></div></article><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/lato-font/3.0.0/css/lato-font.min.css"><link rel="stylesheet" type="text/css" href="/css/number_title.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcdn.net/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="首先，我们已经知道目标串D与模式串S此时满足：&lt;br&gt;$$ D_{[i-j-1 \ldots i-1]} =  S_{[0 \ldots j-1]} $$&lt;br&gt;且有满足下式的&lt;strong&gt;最大的&lt;/strong&gt;k：&lt;br&gt;$$ S_{[0 \ldots k-1]} = S_{[j-k \ldots j-1]} $$"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>为什么KMP算法不会跳过正确答案？ | Hickey</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.2"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a><a class="sidebar-nav-item" href="/about">About</a></nav><div class="container post-meta"><div class="post-time">2022-05-26</div> <div class="post-tags"><a class="post-tag-none-link" href="/tags/Proof/" rel="tag">#Proof</a></div></div></div><div class="container post-header"><p class="post-title" align="center">为什么KMP算法不会跳过正确答案？</p></div><hr class="_title_line"><div class="container post-content"><p>首先，我们已经知道目标串D与模式串S此时满足：<br>$$ D_{[i-j-1 \ldots i-1]} =  S_{[0 \ldots j-1]} $$<br>且有满足下式的<strong>最大的</strong>k：<br>$$ S_{[0 \ldots k-1]} = S_{[j-k \ldots j-1]} $$</p>
+<p>亦有推论：</p>
+<p>$$ S_{[0 \ldots k-1]} = D_{[i-k \ldots i-1]} $$</p>
+<p>而$D_{[i]} ≠ S_{[j]}$ ，按照KMP算法描述的，此时我们要将j回退至next[j]的位置，即k。 </p>
+<p>回退j相当于移动了模式串的0位置对着的目标串的位置，从原来对着的$i-j-1$移动到了$i-k$，那么，为何这样移动不会漏掉这中间的位置呢？我们用反证法证明。</p>
+<p>假设存在$k’$满足：</p>
+<p>$i-j-1 &lt; i-k’ &lt; i-k$ 且 $S_{[0 \ldots k’-1]} = S_{[j-k’ \ldots j-1]} \Rightarrow S_{[0 \ldots k’-1]} = D_{[i-k’ \ldots i-1]}$</p>
+<p>那么必有$k’&gt;k$ ，与<strong>最大的k</strong>这一点矛盾。</p>
+<p>如果假设不成立，即$S_{[0 \ldots k’-1]} ≠ S_{[j-k’ \ldots j-1]}$或$i-k’\notin (i-j-1, i-k)$。无论哪一点导致假设不成立，这样的$k’$都不是我们现在想要的，可以跳过。</p>
+<p>总结：通过以上，我们证明了满足条件的$k’$与已知矛盾，而不满足条件的$k’$我们可以直接跳过，结论就是，$(i-j-1, i-k)$区间都可以跳过而不会漏掉正确的答案。这其实是<strong>最大的k</strong>所保证的，而最大的k，代表着$S_{[0 \ldots j-1]}$中前缀和后缀子串相等的最大长度。</p>
+</div></div><script type="text/x-mathjax-config">
+   MathJax.Hub.Config({"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"], linebreaks: { automatic:true }, EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50) },
+        tex2jax: { inlineMath: [ ["$", "$"], ["\\(","\\)"] ], displayMath: [ ["$$","$$"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno",skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']},
+        TeX: {  noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } }, Macros: { href: "{}" } },
+        messageStyle: "none"
+    }); 
+</script>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+<script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><div class="post-main post-comment"><div id="disqus_thread"></div><script type="text/javascript">
+var disqus_shortname = 'hickey-1';
+var disqus_identifier = '2022/05/26/为什么KMP算法不会跳过正确答案？/';
+var disqus_title = '为什么KMP算法不会跳过正确答案？';
+var disqus_url = 'http://hickey.ltd/2022/05/26/%E4%B8%BA%E4%BB%80%E4%B9%88KMP%E7%AE%97%E6%B3%95%E4%B8%8D%E4%BC%9A%E8%B7%B3%E8%BF%87%E6%AD%A3%E7%A1%AE%E7%AD%94%E6%A1%88%EF%BC%9F/';
+(function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a target="_blank" rel="noopener" href="http://disqus.com" class="dsq-brlink">Blog comments powered by <span class="logo-disqus">Disqus</span></a></div></article><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/lato-font/3.0.0/css/lato-font.min.css"><link rel="stylesheet" type="text/css" href="/css/number_title.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcdn.net/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

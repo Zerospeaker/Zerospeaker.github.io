@@ -1,0 +1,78 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content=" id=&quot;Intro&quot;&gt;&lt;a href=&quot;#Intro&quot; class=&quot;headerlink&quot; title=&quot;Intro&quot;&gt;&lt;/a&gt;Intro&lt;/h1&gt;&lt;p&gt;在基于块的混合编码算法中，每张图片被划分为块，一张图片中的多个块构成了可被独立解码的分片。"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>Block Structures in HEVC | Hickey</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.2"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a><a class="sidebar-nav-item" href="/about">About</a></nav><div class="container post-meta"><div class="post-time">2023-03-10</div> <div class="post-tags"><a class="post-tag-none-link" href="/tags/HEVC/" rel="tag">#HEVC</a></div></div></div><div class="container post-header"><p class="post-title" align="center">Block Structures in HEVC</p></div><hr class="_title_line"><div class="container post-toc"><details class="toc" open><summary class="toc-accordion">Table of Contents</summary><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Intro"><span class="toc-number">1.</span> <span class="toc-text">Intro</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Coding-Tree-Blocks-and-Coding-Tree-Units"><span class="toc-number">2.</span> <span class="toc-text">Coding Tree Blocks and Coding Tree Units</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Coding-Trees-Coding-Blocks-and-Coding-Units"><span class="toc-number">3.</span> <span class="toc-text">Coding Trees, Coding Blocks, and Coding Units</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Prediction-Blocks-and-Prediction-Units"><span class="toc-number">4.</span> <span class="toc-text">Prediction Blocks and Prediction Units</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Intra"><span class="toc-number">4.1.</span> <span class="toc-text">Intra</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Inter"><span class="toc-number">4.2.</span> <span class="toc-text">Inter</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Residual-Quadtree-Transform-Transform-Blocks-and-Transform-Units"><span class="toc-number">5.</span> <span class="toc-text">Residual Quadtree Transform, Transform Blocks,and Transform Units</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#RQT"><span class="toc-number">5.1.</span> <span class="toc-text">RQT</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#References"><span class="toc-number">6.</span> <span class="toc-text">References</span></a></li></ol></details></div><blockquote> <p>本文使用CC BY-NC-SA 4.0协议。禁止商业转载，非商业转载请注明作者和出处。</p></blockquote><div class="container post-content"><h1 id="Intro"><a href="#Intro" class="headerlink" title="Intro"></a>Intro</h1><p>在基于块的混合编码算法中，每张图片被划分为块，一张图片中的多个块构成了可被独立解码的分片。</p>
+<p>HEVC相较于AVC的编码性能的提升有一半要归功于预测编码和变换编码的块的灵活性的提升。</p>
+<p>在HEVC中，每帧首先被划分为多个块，每个块使用帧内或帧间预测编码。由于帧间预测主要使用时间上相邻的帧中的物体的运动信息，因此帧间预测也被称为运动补偿预测。</p>
+<blockquote>
+<p>While intra-picture prediction exploits the <strong>spatial redundancy between neighboring blocks</strong> inside a picture, motion-compensated prediction utilizes the large amount of <strong>temporal redundancy between pictures</strong>.</p>
+</blockquote>
+<p>原块和预测块之间的差值（残差）使用<strong>变换编码</strong>进行传输：为了消除残差块的空域冗余，依次使用去相关线性变换、变换系数量化、量化后系数熵编码。</p>
+<p>用于预测编码或变换编码的块的不同划分反映了失真和码率之间的不同程度的折衷。当我们把一个块划分为更多子块并为每个子块选择最优预测参数时，我们通常可以减少预测误差降低失真，但传输更多的预测参数同时也使得码率增加。块细分在率失真意义上是否有利取决于实际正在编码的块的特性。</p>
+<p>在HEVC的设计过程中，高清和超高清视频正在大行其道，为了处理如此高分辨率的视频，使用更大的块用于预测或变换编码可以取得更好的效果。但是为了使块划分适应图像的局部特征，支持更小的块也是同样必要的。HEVC通过使用分层四叉树同时解决了这两个问题。而且四叉树还允许编码器使用fast optimal tree pruning algorithms来选择最优的块划分。</p>
+<h1 id="Coding-Tree-Blocks-and-Coding-Tree-Units"><a href="#Coding-Tree-Blocks-and-Coding-Tree-Units" class="headerlink" title="Coding Tree Blocks and Coding Tree Units"></a>Coding Tree Blocks and Coding Tree Units</h1><p>在HEVC之前的视频编码标准中，图像被划分为大小相同的许多宏块。每个宏块包含16*16的亮度像素，如果使用4:2:0的颜色模型，那么每个宏块包含两个8*8的色度像素。在这些标准中，宏块是基本的处理单元。对于每个宏块，编码器需要决策使用帧内预测还是帧间预测。选择了预测模式后，宏块还可以根据需要继续划分。但需要注意的是，预测模式的选择是在宏块层面上决定的。</p>
+<p>对于高清和超高清视频来说，以往标准中的最大块尺寸16*16已不能满足要求，许多大于16*16的图像区域可以用相同的预测参数描述。如果还使用16*16的最大块，那么就会存在数据冗余而导致码率较高。HEVC的一个重要改进点就是支持更大的块。</p>
+<p>尽管高清和超高清视频是HEVC标准所要考虑的重心，但它同时也需要获得在传统视频应用上比以往标准更高的编码效率。虽然提高块大小对高清视频编码有利，但这却会对低分辨率视频的编码效率造成不良影响，尤其是在只考虑较少的划分模式的低复杂度编码器上。因此，HEVC支持了<strong>基本处理单元的可变大小</strong>。</p>
+<p>HEVC中的编码树单元（CTU）类似于AVC中的宏块，是基本的处理单元，它包含亮度块（luma CTBs）、色度块（chroma CTBs）和对应的语法元素。将一张图片划分为相同大小的块，这些块加上对应的语法元素就是CTU。由于CTU的大小是可变的，码流中需要传输CTU的大小参数，对于亮度分量来说，$2^N*2^N$的大小支持<code>N=4,5,6</code>，即16*16、32*32、64*64的大小。大的CTU通常可以提高压缩效率，但同时编解码延迟、内存消耗、计算复杂度也会增加。编码器可以自由选择对目标应用最好的CTU大小折衷方案。</p>
+<h1 id="Coding-Trees-Coding-Blocks-and-Coding-Units"><a href="#Coding-Trees-Coding-Blocks-and-Coding-Units" class="headerlink" title="Coding Trees, Coding Blocks, and Coding Units"></a>Coding Trees, Coding Blocks, and Coding Units</h1><p>在先前的标准中，宏块不仅用来将图像划分为多个块，还是使用帧内或帧间预测的决策层面。在决定了使用帧内还是帧间预测后，宏块可以根据预测的需要继续划分。</p>
+<p>在AVC中，对于帧内预测编码，标准支持16*16、8*8、4*4的亮度分量子宏块大小。对于Intra-4*4模式，每个大小为16*16的宏块将被划分为16个大小为4*4的子块，帧内预测和残差变换都使用4*4的块大小。对于Intra-8*8模式，帧内预测和残差变换都使用8*8的块大小。对于Intra-16*16模式，帧内预测使用已编码的相邻宏块作为参考，而预测残差使用一个两步变换编码（低复杂度16*16的变换的变体）。对于色度分量，所有的三种帧内预测模式都使用8*8的宏块的大小（对应于16*16的亮度宏块大小）而不划分子宏块，残差使用8*8变换的变体编码。</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230314094316-2023-03-14-09-43-17.png"></p>
+<p>对于帧间预测编码，AVC支持四种大小的宏块划分模式：Inter-16*16、Inter-16*8、Inter-8*16和Inter-8*8。对于Inter-16*16模式，亮度和色度分量使用相同的运动参数。对于Inter-16*8和Inter-8*16模式，宏块分别在水平和竖直方向上被划分两个子宏块，运动估计分别在两个子宏块上进行。对于Inter-8*8模式，宏块被划分为4个8*8的子宏块，运动估计可以在这四个子宏块上进行，也可以进一步划分这些子宏块，支持8*4、4*8、4*4的大小。对于亮度分量的所有帧间预测，AVC的 High profifile支持8*8和4*4的变换块大小，选择的块大小需要在宏块层次上以参数的形式输出到码流。对于色度分量的所有帧间预测，残差变换总是使用4*4的变换块大小。</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230314095229-2023-03-14-09-52-30.png"></p>
+<p>在HEVC中，基本处理单元CTU的大小上可达到64*64的大小，直接套用AVC的宏块语法会产生问题。在率失真场景下，一方面只允许在大块层面选择帧内还是帧间预测模式是不合适的。另一方面，更多的划分层次使得传统的宏块划分语法变得复杂。而且如果一个CTU内部的变换块大小不能灵活变化，编码器就难以有效利用图像的局部特征。</p>
+<p>为了解决这些问题，HEVC引入了另一个处理单元CU（Coding Units）。一个CTU可以被分为许多不同大小的CU（一个CTU就对应了一颗Coding Tree），一个CU包括色度分量块、亮度分量块和对应的语法元素。CU中的色度分量块和亮度分量块被称为CB（Coding Blocks）。色度CTB的划分总是要和亮度CTB的划分对齐。</p>
+<p>CU的最小大小在SPS（sequence parameter set）中指定，可以选择<strong>从8*8的亮度块大小到CTU的大小</strong>。在CTU层面，需要向码流中传输split_cu_flag标志以指明当前CTU是否划分为多个CU，类似的，划分出的CU也要指明是否继续划分，除非当前CU大小达到SPS中指定的最小CU大小（在这种情况下，编码器推断出当前CU不会继续划分，不需要在码流中传输标志参数）。因此一个低复杂度编码器如果不使用小于某个尺寸的CU，可以相应地在SPS中指定最小CU大小，这样就避免在码流中传输不必要的划分标志参数。</p>
+<p>一个CTU里面的CU按深度优先顺序编码（又称<strong>z-scan</strong>编码），这样可以使得当前CU的左边和上边的CU都已完成编码（除非当前CU位于左边界或上边界），可以用来作为当前CU的参考。</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230314192135-2023-03-14-19-21-36.png"></p>
+<p>按亮度像素计算，每帧的宽高必须是SPS参数中指定的最小CU大小的整数倍（如果不满足这一点，可以填充扩展边界并填充任意像素满足这一要求，并在SPS中指定裁切窗口参数），但不必是CTU大小的整数倍。如果每帧的宽高不是CTU大小的整数倍，边界的CTU必须要被继续划分直至子块对齐到图像边界，但不必传输划分标志；这些CTU里超出边界的CU不必编码。</p>
+<p>在HEVC中，帧间预测和帧内预测之间的选择落到了CU层面上，在这种意义下，HEVC的CU类似于AVC中的宏块。不同于宏块的是，CU大小是可变的。类似于宏块的是，CU选择了帧间预测还是帧内预测后，根据预测和变换编码的需要，可以进一步被切分为小的块。</p>
+<p>引入编码树结构的主要优点是，通过这种方式获得了一种优雅而统一的语法，可以将CTU划分为用于帧内预测、运动补偿预测和变化编码的块。</p>
+<h1 id="Prediction-Blocks-and-Prediction-Units"><a href="#Prediction-Blocks-and-Prediction-Units" class="headerlink" title="Prediction Blocks and Prediction Units"></a>Prediction Blocks and Prediction Units</h1><p>在HEVC中，对于每个CU，码流中需要指出选定的预测模式：选择帧内预测还是帧间预测。</p>
+<h2 id="Intra"><a href="#Intra" class="headerlink" title="Intra"></a>Intra</h2><p>如果选择帧内预测，对于亮度分量还要指明使用35种帧内预测模式中具体的哪一种。如果当前CU大小为SPS中指定的最小CU大小，可以选择将亮度CB进一步划分为子块，每个子块独立选择35种预测模式的某一种。</p>
+<p>而对于色度分量来说，无论当前CU大小如何，都不允许进一步划分，整个CU内的色度分量CB使用一种帧内预测模式并在码流中指明，并且两个色度分量使用相同的帧内预测模式。不同于亮度分量的35种模式，色度分量的帧内预测仅可从5种模式中选择，其中一种模式是当前CU的亮度CB的帧内预测模式或者是当前CU的亮度CB的第一个亮度子块的帧内预测模式（在后一种情况下，当前CU的亮度CB被划分为四个子块，每个子块独立选择帧内预测模式）。</p>
+<p>至于为什么只在CU大小为SPS指明的最小CU大小时才允许进一步将亮度CB划分子块，每个子块独立选择预测模式–这是因为当CU不是最小大小时，将CU继续划分为子CU，每个子CU独立选择预测模式和将CU的CB划分为子块，每个子CB独立选择预测模式是等效的，而在每个CU层面支持后者则更加复杂。</p>
+<p>实际上由于变换编码的存在，实际的帧内预测所使用的块可能和码流中指明的帧内预测模式在编码模式选择评估时所应用的块不同。如果当前CU（使用帧间预测）的亮度CB被划分为子块，那么当前CU也要划分为多个TB，以此保证变换块内的所有像素使用相同的帧内预测模式。然而TB可以比帧内预测所使用的块更小：如下图所示，黑框表示帧内预测块，而灰框表示变换块；a表示选择帧内预测模式评估时所使用的块，b表示实际进行帧内预测时所使用的块；码流中指明的帧内预测模式对应图中的大黑框，而实际进行帧内预测却是在小灰框层面上进行的。</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230318225041-2023-03-18-22-50-42.png"></p>
+<p>由于两个像素之间的相关性随着像素之间的距离而减小（对于任何给定的方向），平均而言，如果使用更接近我们想要预测的像素的重建像素作为参考，就会得到更好的预测值。因此，帧内预测是在变换块的基础上进行的。</p>
+<p>需要注意的是，一方面随着变换块的增大，帧内预测的有效性会降低（图像上的像素距离越远空域相关性也越弱），但另一方面，大的变换块却会带来变换效率的提高。</p>
+<h2 id="Inter"><a href="#Inter" class="headerlink" title="Inter"></a>Inter</h2><p>如果一个CU选择使用帧间预测，那么亮度和色度CB都可以被进一步划分为预测块（prediction blocks）。一个预测块PB是使用相同运动参数的亮度或色度像素的集合。注意PB是针对帧间预测模式而言的。运动参数包含预测的方向（单向还是双向）、参考图像索引以及每个预测方向对应的运动向量。一个使用帧间预测的CU的两个色度分量和亮度分量使用相同的划分方式。亮度PB和两个色度PB和对应的语法元素构成了预测单元（prediction units）。一个PU作为帧间预测模式参数传输的基本单元。</p>
+<p>HEVC支持8种模式将CU划分为多个PU，如下图所示。一个CU可以作为一个单独的PU（M*M），或者可以划分为多个PU。类似于帧内预测，将一个CU划分为四个PU和将一个CU划分为四个CU且每个CU作为一个PU的效果是等价的，因此HEVC仅当当前CU为SPS中指定的最小CU大小时才支持将CU划分为四个PU（$\frac{M}{2}*\frac{M}{2}$）。对于将一个CU划分为两个PU的情形，HEVC支持6种划分方式，其中4种是非对称的划分方式。但非对称划分仅当CU大于8*8亮度像素大小时才可以使用。进一步的，为了减少最坏情况下的内存带宽，仅当SPS中的最小CU大小大于8*8亮度像素大小时$\frac{M}{2}*\frac{M}{2}$模式才允许使用。因此，8*4和4*8是可以用于帧间预测的最小的块，并且8*4和4*8大小的PU只能使用单向预测而不能使用双向预测。</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230315151931-2023-03-15-15-19-32.png"></p>
+<p>为运动补偿预测增加更多种类的块划分通常可以提高编码效率，但如果编码器不能评估所有的块划分以从中选择最优划分方式，那么这种编码效率的提升便无法获得，不仅如此，增加的块划分需要更多开销指明所使用的块划分模式，反而导致编码效率低于块划分模式更少的编码标准。因此，HEVC支持的划分模式是经过了精心的权衡的结果。此外，HEVC还支持通过SPS传递参数，禁用非对称划分模式以适应低复杂度编码器的需要。</p>
+<p>需要注意的是，不同代的视频编码标准用于提高编码效率的一个重点就在于增加运动补偿预测支持的块大小的种类数目。</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230314162030-2023-03-14-16-20-31.png"></p>
+<h1 id="Residual-Quadtree-Transform-Transform-Blocks-and-Transform-Units"><a href="#Residual-Quadtree-Transform-Transform-Blocks-and-Transform-Units" class="headerlink" title="Residual Quadtree Transform, Transform Blocks,and Transform Units"></a>Residual Quadtree Transform, Transform Blocks,and Transform Units</h1><p>在HEVC中，为了实现对预测残差更有效的变换编码，每个CB可以被划分为多个编码块（TB）。将一个亮度CB划分为多个TB的过程由另一颗四叉树描述，这个四叉树称为残差四叉树（residual quadtree，RQT）。总体上色度CB的划分和亮度CB的划分使用同一颗RQT，除了一个特殊情况。如下图所示，CTB可以被划分为一至多个CB，每个叶子CB可以被划分为一至多个TB，蓝色的线描述了编码树的结构，而红色的线描述了残差四叉树的结构。</p>
+<p><img src="https://hickey-image.oss-cn-shanghai.aliyuncs.com/image/20230315154540-2023-03-15-15-45-41.png"></p>
+<p>通过引入RQT，TB可以自适应残差信号的空域-频域特征灵活地选择大小以获得不同的变换基函数。大的TB提供更好的频域解析度，而小的TB提供更好的空域解析度，因此根据具体的残差信号的特征，编码器可以从中选择最适合的折衷方案。</p>
+<h2 id="RQT"><a href="#RQT" class="headerlink" title="RQT"></a>RQT</h2><p>每个RQT有三个限定参数：树的最大深度$d_{max}$、变换块的最大尺寸$n_{max}$、变换块的最小尺寸$n_{min}$。$d_{max}$=1表示当前CB可以作为一个TB，也可以进一步划分为四个TB，但不能第二次划分；而$d_{max}$=0表示当前CB只能作为一个单独的TB，不能被划分。$n_{max}$和$n_{min}$的取值范围为$[2,5]$（以2为底的对数表示），表示支持4*4到32*32的块大小范围。</p>
+<h1 id="References"><a href="#References" class="headerlink" title="References"></a>References</h1><blockquote>
+<p>[1] High Efficiency Video Coding (HEVC) Algorithms and Architectures. Integrated Circuits and Systems.</p>
+</blockquote>
+</div></div><script type="text/x-mathjax-config">
+   MathJax.Hub.Config({"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"], linebreaks: { automatic:true }, EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50) },
+        tex2jax: { inlineMath: [ ["$", "$"], ["\\(","\\)"] ], displayMath: [ ["$$","$$"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno",skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']},
+        TeX: {  noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } }, Macros: { href: "{}" } },
+        messageStyle: "none"
+    }); 
+</script>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+<script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><div class="post-main post-comment"><div id="disqus_thread"></div><script type="text/javascript">
+var disqus_shortname = 'hickey-1';
+var disqus_identifier = '2023/03/10/Block Structures in HEVC/';
+var disqus_title = 'Block Structures in HEVC';
+var disqus_url = 'http://hickey.ltd/2023/03/10/Block%20Structures%20in%20HEVC/';
+(function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a target="_blank" rel="noopener" href="http://disqus.com" class="dsq-brlink">Blog comments powered by <span class="logo-disqus">Disqus</span></a></div></article><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/lato-font/3.0.0/css/lato-font.min.css"><link rel="stylesheet" type="text/css" href="/css/number_title.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcdn.net/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

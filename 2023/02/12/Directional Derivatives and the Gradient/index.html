@@ -1,0 +1,45 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content=" id=&quot;Directional-Derivatives&quot;&gt;&lt;a href=&quot;#Directional-Derivatives&quot; class=&quot;headerlink&quot; title=&quot;Directional Derivatives&quot;&gt;&lt;/a&gt;Directional Derivatives&lt;/h1&gt;&lt;p&gt;直观地说，导数反映了函数$f$在某一点沿某一方向的变化率，但方向这个词需要解释，对于一维情况，函数只能沿着$x$轴变化，也就不存在偏导数，而对于二维情况，从某个点出发可以有无数个行进方向，其中特殊的行进方向是沿$x$轴和$y$轴，对应的变化率也就是函数分别对于自变量$x$和自变量$y$的偏导数$\frac{\partial{f}}{\partial{x}}$和$\frac{\partial{f}}{\partial{y}}$，但我们如果想要知道其他方向的变化率怎么办？这就引入了方向导数的概念。"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>Directional Derivatives and the Gradient | Hickey</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.2"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a><a class="sidebar-nav-item" href="/about">About</a></nav><div class="container post-meta"><div class="post-time">2023-02-12</div> <div class="post-tags"><a class="post-tag-none-link" href="/tags/Calculus/" rel="tag">#Calculus</a></div></div></div><div class="container post-header"><p class="post-title" align="center">Directional Derivatives and the Gradient</p></div><hr class="_title_line"><div class="container post-toc"><details class="toc" open><summary class="toc-accordion">Table of Contents</summary><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Directional-Derivatives"><span class="toc-number">1.</span> <span class="toc-text">Directional Derivatives</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Gradient"><span class="toc-number">2.</span> <span class="toc-text">Gradient</span></a></li></ol></details></div><div class="container post-content"><h1 id="Directional-Derivatives"><a href="#Directional-Derivatives" class="headerlink" title="Directional Derivatives"></a>Directional Derivatives</h1><p>直观地说，导数反映了函数$f$在某一点沿某一方向的变化率，但方向这个词需要解释，对于一维情况，函数只能沿着$x$轴变化，也就不存在偏导数，而对于二维情况，从某个点出发可以有无数个行进方向，其中特殊的行进方向是沿$x$轴和$y$轴，对应的变化率也就是函数分别对于自变量$x$和自变量$y$的偏导数$\frac{\partial{f}}{\partial{x}}$和$\frac{\partial{f}}{\partial{y}}$，但我们如果想要知道其他方向的变化率怎么办？这就引入了方向导数的概念。</p>
+<p>在二维情形下，某方向向量可以由投影在x轴和y轴的分量表示，即$\pmb{l}=[\Delta x,\Delta y]$，在任一点$(x,y)$沿着这个方向行走会得到新的点$(x+\Delta x,y+\Delta y)$，函数的变化量为$\Delta f=f(x+\Delta x,y+\Delta y)-f(x,y)$，方向向量的长度为$l=||\pmb{l}||=\sqrt{(\Delta x)^2+(\Delta y)^2}$，那么方向导数就定义为沿这个方向行进导致的函数的变化率（考虑行进的长度无限小）：$\frac{\partial{f}}{\partial{l}}=\lim\limits_{l \rightarrow 0}\frac{\Delta f}{l}$。</p>
+<p>由二元函数可微的定义，$\Delta f=f(x+\Delta x,y+ \Delta y)-f(x,y)=f_x(x,y)\Delta x + f_y(x,y)\Delta y + O(\sqrt{(\Delta x)^2+(\Delta y)^2})$，那么对于上面的极限：</p>
+<p>$\lim\limits_{l \rightarrow 0}\frac{\Delta f}{l} = \lim\limits_{l \rightarrow 0}\frac{f_x(x,y)\Delta x + f_y(x,y)\Delta y + O(\sqrt{(\Delta x)^2+(\Delta y)^2})}{\sqrt{(\Delta x)^2+(\Delta y)^2}} = f_x(x,y)\frac{\Delta x}{\sqrt{(\Delta x)^2+(\Delta y)^2}}+f_y(x,y)\frac{\Delta y}{\sqrt{(\Delta x)^2+(\Delta y)^2}}$</p>
+<p>设$\pmb{l}$与$x$轴（即向量$[1,0]^T$）、y轴（即向量$[0,1]^T$）的夹角分别为$\alpha$、$\beta$，则：$cos\alpha=\frac{\Delta x}{\sqrt{(\Delta x)^2+(\Delta y)^2}}$，$cos\beta=\frac{\Delta y}{\sqrt{(\Delta x)^2+(\Delta y)^2}}$。则方向导数又可写为$\frac{\partial f}{\partial l}=\frac{\partial f}{\partial x}*cos\alpha+\frac{\partial f}{\partial y}*cos\beta$。</p>
+<p>将各偏导写成向量，记为$\nabla f$，则$\nabla f=[\frac{\partial f}{\partial x}, \frac{\partial f}{\partial y}]^T$，并且$\frac{\pmb{l}}{||\pmb{l}||}=[cos\alpha, cos\beta]^T$，那么方向导数又可写为向量内积的形式：</p>
+<p>$$\frac{\partial f}{\partial l}=\nabla f \cdot \frac{\pmb{l}}{||\pmb{l}||}$$</p>
+<p>此等式可以自然扩展到更高维。</p>
+<h1 id="Gradient"><a href="#Gradient" class="headerlink" title="Gradient"></a>Gradient</h1><p>如果我们想要知道在函数的某个点处，沿哪个方向行进会产生最大的函数变化率，那么就要求出该点处所有方向导数的最大值，实际上这个最大的方向导数所在的方向就是向量$\nabla f$的方向，这可以很容易地由向量内积的性质推出。</p>
+<p>给向量$\nabla f$一个名字，这个名字就叫梯度。从上面得知，梯度是函数变化最快的方向，具体来说，梯度是函数增长最快的方向。</p>
+<p>重新表达下，给定一个标量函数$f(\pmb{x})$，其输入是$n$维向量，那么：</p>
+<p>$$\nabla f=[\frac{\partial f}{\partial x_1}, \frac{\partial f}{\partial x_2}, …,\frac{\partial f}{\partial {x_n}}]^T$$</p>
+<p>梯度的概念可以推广到输出为向量的函数，考虑一个函数$\pmb{f}(\pmb{x}):\mathbb{R}^n \mapsto \mathbb{R}^m$，其梯度：</p>
+<p>$$\nabla \pmb{f}=[\nabla f_1, \nabla f_2,…,\nabla f_m]^T=<br>\left[<br>\begin{matrix}<br>\frac{\partial{f_1}}{\partial{x_1}}  &amp; \frac{\partial{f_1}}{\partial{x_2}} &amp; … &amp; \frac{\partial{f_1}}{\partial{x_n}} \\<br>\frac{\partial{f_2}}{\partial{x_1}}  &amp; \frac{\partial{f_2}}{\partial{x_2}} &amp; … &amp; \frac{\partial{f_2}}{\partial{x_n}} \\<br>\vdots  &amp; \vdots  &amp; \vdots  &amp; \vdots  \\<br>\frac{\partial{f_m}}{\partial{x_1}}  &amp; \frac{\partial{f_m}}{\partial{x_2}} &amp; … &amp; \frac{\partial{f_m}}{\partial{x_n}} \\<br>\end{matrix}<br>\right]$$</p>
+</div></div><script type="text/x-mathjax-config">
+   MathJax.Hub.Config({"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"], linebreaks: { automatic:true }, EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50) },
+        tex2jax: { inlineMath: [ ["$", "$"], ["\\(","\\)"] ], displayMath: [ ["$$","$$"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno",skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']},
+        TeX: {  noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } }, Macros: { href: "{}" } },
+        messageStyle: "none"
+    }); 
+</script>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+<script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><div class="post-main post-comment"><div id="disqus_thread"></div><script type="text/javascript">
+var disqus_shortname = 'hickey-1';
+var disqus_identifier = '2023/02/12/Directional Derivatives and the Gradient/';
+var disqus_title = 'Directional Derivatives and the Gradient';
+var disqus_url = 'http://hickey.ltd/2023/02/12/Directional%20Derivatives%20and%20the%20Gradient/';
+(function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a target="_blank" rel="noopener" href="http://disqus.com" class="dsq-brlink">Blog comments powered by <span class="logo-disqus">Disqus</span></a></div></article><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/lato-font/3.0.0/css/lato-font.min.css"><link rel="stylesheet" type="text/css" href="/css/number_title.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcdn.net/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>
